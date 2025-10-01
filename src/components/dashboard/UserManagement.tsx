@@ -1,7 +1,156 @@
+import { useState, useEffect } from 'react'
+import { Users, Shield, Trash2, UserPlus } from 'lucide-react'
+import { supabase } from '@/integrations/supabase/client'
+import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Users, Shield } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { UserInvitationForm } from './UserInvitationForm'
+import { AccessAssignmentModal } from './AccessAssignmentModal'
+import { UserDeleteModal } from './UserDeleteModal'
+
+interface UserProfile {
+  user_id: string
+  full_name: string | null
+  role: string | null
+  department: string | null
+  created_at: string
+  profiles?: {
+    email?: string
+  }
+}
+
+interface UserWithRoles extends UserProfile {
+  email: string
+  roles: string[]
+}
 
 export const UserManagement = () => {
+  const [users, setUsers] = useState<UserWithRoles[]>([])
+  const [loading, setLoading] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [accessModalOpen, setAccessModalOpen] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<UserWithRoles | null>(null)
+  const { toast } = useToast()
+
+  useEffect(() => {
+    checkAdminStatus()
+    loadUsers()
+  }, [])
+
+  const checkAdminStatus = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data } = await supabase.rpc('has_role', {
+      _user_id: user.id,
+      _role: 'admin',
+    })
+
+    setIsAdmin(data === true)
+  }
+
+  const loadUsers = async () => {
+    setLoading(true)
+    try {
+      // Create edge function to fetch users with emails
+      const { data: usersData, error: usersError } = await supabase.functions.invoke('get-users-list')
+
+      if (usersError) {
+        // Fallback: Load profiles without emails
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, role, department, created_at')
+          .neq('role', 'deleted')
+          .order('created_at', { ascending: false })
+
+        if (profilesError) throw profilesError
+
+        // Load user roles
+        const { data: userRoles, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('user_id, role')
+
+        if (rolesError) throw rolesError
+
+        // Combine data without emails
+        const usersWithRoles: UserWithRoles[] = (profiles || []).map((profile) => {
+          const roles = (userRoles || [])
+            .filter((ur) => ur.user_id === profile.user_id)
+            .map((ur) => ur.role)
+
+          return {
+            ...profile,
+            email: 'Email not available',
+            roles: roles.length > 0 ? roles : ['user'],
+          }
+        })
+
+        setUsers(usersWithRoles)
+      } else {
+        setUsers(usersData?.users || [])
+      }
+    } catch (error: any) {
+      console.error('Error loading users:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to load users',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleManageAccess = (user: UserWithRoles) => {
+    setSelectedUser(user)
+    setAccessModalOpen(true)
+  }
+
+  const handleDeleteUser = (user: UserWithRoles) => {
+    setSelectedUser(user)
+    setDeleteModalOpen(true)
+  }
+
+  const getRoleBadge = (role: string) => {
+    const variants: Record<string, "default" | "secondary" | "destructive"> = {
+      admin: 'destructive',
+      moderator: 'default',
+      user: 'secondary',
+    }
+    return <Badge variant={variants[role] || 'outline'}>{role}</Badge>
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-3xl font-bold">User Management</h2>
+          <p className="text-muted-foreground">Manage team members and access controls</p>
+        </div>
+        <Card className="border-border/50">
+          <CardContent className="text-center py-12">
+            <Shield className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-xl font-medium mb-2">Admin Access Required</h3>
+            <p className="text-muted-foreground">
+              You need administrator privileges to access user management features.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -9,15 +158,127 @@ export const UserManagement = () => {
         <p className="text-muted-foreground">Manage team members and access controls</p>
       </div>
 
-      <Card className="border-border/50">
-        <CardContent className="text-center py-12">
-          <Users className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-xl font-medium mb-2">User Management Coming Soon</h3>
-          <p className="text-muted-foreground">
-            Advanced user management features including groups, roles, and permissions will be available in the next update.
-          </p>
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="users" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="users">
+            <Users className="h-4 w-4 mr-2" />
+            Users
+          </TabsTrigger>
+          <TabsTrigger value="invite">
+            <UserPlus className="h-4 w-4 mr-2" />
+            Invite Users
+          </TabsTrigger>
+          <TabsTrigger value="access">
+            <Shield className="h-4 w-4 mr-2" />
+            Access Control
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="users" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>All Users</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="text-center py-8">Loading users...</div>
+              ) : users.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No users found
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Roles</TableHead>
+                      <TableHead>Department</TableHead>
+                      <TableHead>Joined</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((user) => (
+                      <TableRow key={user.user_id}>
+                        <TableCell className="font-medium">
+                          {user.full_name || 'N/A'}
+                        </TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-1 flex-wrap">
+                            {user.roles.map((role) => (
+                              <span key={role}>{getRoleBadge(role)}</span>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell>{user.department || 'N/A'}</TableCell>
+                        <TableCell>
+                          {new Date(user.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleManageAccess(user)}
+                            >
+                              <Shield className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteUser(user)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="invite">
+          <UserInvitationForm />
+        </TabsContent>
+
+        <TabsContent value="access">
+          <Card>
+            <CardHeader>
+              <CardTitle>Access Control Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">
+                Select a user from the Users tab and click the shield icon to manage their vault access permissions.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {selectedUser && (
+        <>
+          <AccessAssignmentModal
+            open={accessModalOpen}
+            onOpenChange={setAccessModalOpen}
+            userId={selectedUser.user_id}
+            userName={selectedUser.full_name || 'Unknown'}
+          />
+          <UserDeleteModal
+            open={deleteModalOpen}
+            onOpenChange={setDeleteModalOpen}
+            userId={selectedUser.user_id}
+            userName={selectedUser.full_name || 'Unknown'}
+            userEmail={selectedUser.email}
+            onSuccess={loadUsers}
+          />
+        </>
+      )}
     </div>
   )
 }
