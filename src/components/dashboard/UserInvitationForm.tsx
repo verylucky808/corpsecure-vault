@@ -96,6 +96,7 @@ export const UserInvitationForm = () => {
           email: values.email,
           role: values.role,
           invitedBy: user.id,
+          appUrl: window.location.origin,
         },
       })
 

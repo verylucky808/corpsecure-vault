@@ -14,6 +14,7 @@ interface InvitationRequest {
   email: string;
   role: "admin" | "moderator" | "user";
   invitedBy: string;
+  appUrl: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -27,9 +28,9 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { email, role, invitedBy }: InvitationRequest = await req.json();
+    const { email, role, invitedBy, appUrl }: InvitationRequest = await req.json();
 
-    console.log("Processing invitation for:", email, "with role:", role);
+    console.log("Processing invitation for:", email, "with role:", role, "appUrl:", appUrl);
 
     // Generate unique token
     const token = crypto.randomUUID();
@@ -66,7 +67,9 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Create invitation link
-    const invitationLink = `${Deno.env.get("VITE_SUPABASE_URL")}/auth/accept-invite?token=${token}`;
+    const invitationLink = `${appUrl}/auth/accept-invite?token=${token}`;
+    
+    console.log("Generated invitation link:", invitationLink);
 
     // Send email via Resend
     const emailResponse = await resend.emails.send({
