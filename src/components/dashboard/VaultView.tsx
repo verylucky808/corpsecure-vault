@@ -20,8 +20,7 @@ import {
   Shield,
   Globe,
   User,
-  Lock,
-  ChevronDown
+  Lock
 } from 'lucide-react'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 
@@ -58,7 +57,6 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
   const [isAddingPassword, setIsAddingPassword] = useState(false)
   const [editingPassword, setEditingPassword] = useState<Password | null>(null)
   const [editingVault, setEditingVault] = useState<Vault | null>(null)
-  const [isVaultsExpanded, setIsVaultsExpanded] = useState(true)
   const { toast } = useToast()
 
   const [newVault, setNewVault] = useState({
@@ -497,57 +495,45 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
       {/* Vaults List */}
       {vaults.length > 0 && (
         <div className="space-y-4">
-          <Collapsible open={isVaultsExpanded} onOpenChange={setIsVaultsExpanded}>
-            <div className="flex items-center justify-between">
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent">
-                  <h3 className="text-lg font-semibold">Your Vaults ({vaults.length})</h3>
-                  <ChevronDown className={`w-5 h-5 transition-transform ${isVaultsExpanded ? 'rotate-180' : ''}`} />
-                </Button>
-              </CollapsibleTrigger>
-            </div>
-            <CollapsibleContent className="mt-4">
-              <div className="grid gap-3">
-                {vaults.map((vault) => (
-                  <Card 
-                    key={vault.id} 
-                    className={`cursor-pointer transition-all hover:border-primary/50 ${selectedVault === vault.id ? 'border-primary bg-primary/5' : ''}`}
-                    onClick={() => setSelectedVault(vault.id)}
-                  >
-                    <CardHeader className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 flex-1">
-                          {vault.is_shared ? <Globe className="w-5 h-5 text-muted-foreground" /> : <Lock className="w-5 h-5 text-muted-foreground" />}
-                          <div>
-                            <CardTitle className="text-base">{vault.name}</CardTitle>
-                            {vault.description && (
-                              <CardDescription className="text-sm mt-1">{vault.description}</CardDescription>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => startEditVault(vault)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => deleteVault(vault.id)}
-                          >
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
-                        </div>
+          <div className="grid gap-3">
+            {vaults.map((vault) => (
+              <Card 
+                key={vault.id} 
+                className={`cursor-pointer transition-all hover:border-primary/50 ${selectedVault === vault.id ? 'border-primary bg-primary/5' : ''}`}
+                onClick={() => setSelectedVault(vault.id)}
+              >
+                <CardHeader className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 flex-1">
+                      {vault.is_shared ? <Globe className="w-5 h-5 text-muted-foreground" /> : <Lock className="w-5 h-5 text-muted-foreground" />}
+                      <div>
+                        <CardTitle className="text-base">{vault.name}</CardTitle>
+                        {vault.description && (
+                          <CardDescription className="text-sm mt-1">{vault.description}</CardDescription>
+                        )}
                       </div>
-                    </CardHeader>
-                  </Card>
-                ))}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
+                    </div>
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => startEditVault(vault)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteVault(vault.id)}
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
 
           {currentVault && (
             <Card className="border-border/50">
