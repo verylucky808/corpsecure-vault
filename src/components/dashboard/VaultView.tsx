@@ -54,6 +54,7 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({})
   const [isAddingVault, setIsAddingVault] = useState(false)
   const [isAddingPassword, setIsAddingPassword] = useState(false)
+  const [editingPassword, setEditingPassword] = useState<Password | null>(null)
   const { toast } = useToast()
 
   const [newVault, setNewVault] = useState({
@@ -246,6 +247,92 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
     }
   }
 
+  const updatePassword = async () => {
+    try {
+      if (!editingPassword) return
+
+      const encryptedPassword = newPassword.password 
+        ? encryptPassword(newPassword.password)
+        : editingPassword.encrypted_password
+
+      const { error } = await supabase
+        .from('passwords')
+        .update({
+          title: newPassword.title,
+          username: newPassword.username,
+          encrypted_password: encryptedPassword,
+          website_url: newPassword.website_url,
+          notes: newPassword.notes,
+        })
+        .eq('id', editingPassword.id)
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to update password",
+          variant: "destructive",
+        })
+        return
+      }
+
+      toast({
+        title: "Success",
+        description: "Password updated successfully",
+      })
+
+      setEditingPassword(null)
+      setNewPassword({
+        title: '',
+        username: '',
+        password: '',
+        website_url: '',
+        notes: ''
+      })
+      loadPasswords(selectedVault)
+    } catch (error) {
+      console.error('Error updating password:', error)
+    }
+  }
+
+  const deletePassword = async (passwordId: string) => {
+    try {
+      const { error } = await supabase
+        .from('passwords')
+        .delete()
+        .eq('id', passwordId)
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete password",
+          variant: "destructive",
+        })
+        return
+      }
+
+      toast({
+        title: "Success",
+        description: "Password deleted successfully",
+      })
+
+      loadPasswords(selectedVault)
+      onStatsUpdate()
+    } catch (error) {
+      console.error('Error deleting password:', error)
+    }
+  }
+
+  const startEditPassword = (password: Password) => {
+    setEditingPassword(password)
+    setNewPassword({
+      title: password.title,
+      username: password.username,
+      password: '',
+      website_url: password.website_url,
+      notes: password.notes
+    })
+  }
+
   const currentVault = vaults.find(v => v.id === selectedVault)
 
   if (loading) {
@@ -357,7 +444,19 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
                     {currentVault.is_shared ? <Globe className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
                     <CardTitle>{currentVault.name}</CardTitle>
                   </div>
-                  <Dialog open={isAddingPassword} onOpenChange={setIsAddingPassword}>
+                  <Dialog open={isAddingPassword || !!editingPassword} onOpenChange={(open) => {
+                    if (!open) {
+                      setIsAddingPassword(false)
+                      setEditingPassword(null)
+                      setNewPassword({
+                        title: '',
+                        username: '',
+                        password: '',
+                        website_url: '',
+                        notes: ''
+                      })
+                    }
+                  }}>
                     <DialogTrigger asChild>
                       <Button variant="security" size="sm">
                         <Plus className="w-4 h-4 mr-2" />
@@ -366,9 +465,9 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Add New Password</DialogTitle>
+                        <DialogTitle>{editingPassword ? 'Edit Password' : 'Add New Password'}</DialogTitle>
                         <DialogDescription>
-                          Add a new password to {currentVault.name}
+                          {editingPassword ? 'Update password details' : `Add a new password to ${currentVault.name}`}
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
@@ -391,11 +490,11 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="password-password">Password</Label>
+                          <Label htmlFor="password-password">Password {editingPassword && '(leave empty to keep current)'}</Label>
                           <Input
                             id="password-password"
                             type="password"
-                            placeholder="Enter password"
+                            placeholder={editingPassword ? "Enter new password or leave empty" : "Enter password"}
                             value={newPassword.password}
                             onChange={(e) => setNewPassword(prev => ({ ...prev, password: e.target.value }))}
                           />
@@ -419,15 +518,25 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
                           />
                         </div>
                         <div className="flex justify-end space-x-2">
-                          <Button variant="outline" onClick={() => setIsAddingPassword(false)}>
+                          <Button variant="outline" onClick={() => {
+                            setIsAddingPassword(false)
+                            setEditingPassword(null)
+                            setNewPassword({
+                              title: '',
+                              username: '',
+                              password: '',
+                              website_url: '',
+                              notes: ''
+                            })
+                          }}>
                             Cancel
                           </Button>
                           <Button 
                             variant="security" 
-                            onClick={addPassword}
-                            disabled={!newPassword.title.trim() || !newPassword.password.trim()}
+                            onClick={editingPassword ? updatePassword : addPassword}
+                            disabled={!newPassword.title.trim() || (!editingPassword && !newPassword.password.trim())}
                           >
-                            Add Password
+                            {editingPassword ? 'Update Password' : 'Add Password'}
                           </Button>
                         </div>
                       </div>
@@ -519,10 +628,22 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
                             </div>
                           </div>
                           <div className="flex items-center space-x-1">
-                            <Button variant="ghost" size="sm">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => startEditPassword(password)}
+                            >
                               <Edit className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="sm">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => {
+                                if (confirm('Are you sure you want to delete this password?')) {
+                                  deletePassword(password.id)
+                                }
+                              }}
+                            >
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
