@@ -586,111 +586,17 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
             <CollapsibleContent>
               <CardContent className="pt-0">
                 <div className="flex justify-end mb-4">
-                  <Dialog open={isAddingPassword && selectedVault === vault.id || (!!editingPassword && selectedVault === vault.id)} onOpenChange={(open) => {
-                    if (!open) {
-                      setIsAddingPassword(false)
-                      setEditingPassword(null)
-                      setNewPassword({
-                        title: '',
-                        username: '',
-                        password: '',
-                        website_url: '',
-                        notes: ''
-                      })
-                    }
-                  }}>
-                    <DialogTrigger asChild>
-                      <Button 
-                        variant="security" 
-                        size="sm"
-                        onClick={() => {
-                          setSelectedVault(vault.id)
-                          setIsAddingPassword(true)
-                        }}
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Password
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>{editingPassword ? 'Edit Password' : 'Add New Password'}</DialogTitle>
-                        <DialogDescription>
-                          {editingPassword ? 'Update password details' : `Add a new password to ${vault.name}`}
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="password-title">Title</Label>
-                          <Input
-                            id="password-title"
-                            placeholder="e.g., Gmail Account"
-                            value={newPassword.title}
-                            onChange={(e) => setNewPassword(prev => ({ ...prev, title: e.target.value }))}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="password-username">Username/Email</Label>
-                          <Input
-                            id="password-username"
-                            placeholder="username@example.com"
-                            value={newPassword.username}
-                            onChange={(e) => setNewPassword(prev => ({ ...prev, username: e.target.value }))}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="password-password">Password {editingPassword && '(leave empty to keep current)'}</Label>
-                          <Input
-                            id="password-password"
-                            type="password"
-                            placeholder={editingPassword ? "Enter new password or leave empty" : "Enter password"}
-                            value={newPassword.password}
-                            onChange={(e) => setNewPassword(prev => ({ ...prev, password: e.target.value }))}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="password-url">Website URL</Label>
-                          <Input
-                            id="password-url"
-                            placeholder="https://example.com"
-                            value={newPassword.website_url}
-                            onChange={(e) => setNewPassword(prev => ({ ...prev, website_url: e.target.value }))}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="password-notes">Notes</Label>
-                          <Textarea
-                            id="password-notes"
-                            placeholder="Additional notes..."
-                            value={newPassword.notes}
-                            onChange={(e) => setNewPassword(prev => ({ ...prev, notes: e.target.value }))}
-                          />
-                        </div>
-                        <div className="flex justify-end space-x-2">
-                          <Button variant="outline" onClick={() => {
-                            setIsAddingPassword(false)
-                            setEditingPassword(null)
-                            setNewPassword({
-                              title: '',
-                              username: '',
-                              password: '',
-                              website_url: '',
-                              notes: ''
-                            })
-                          }}>
-                            Cancel
-                          </Button>
-                          <Button 
-                            variant="security" 
-                            onClick={editingPassword ? updatePassword : addPassword}
-                            disabled={!newPassword.title.trim() || (!editingPassword && !newPassword.password.trim())}
-                          >
-                            {editingPassword ? 'Update Password' : 'Add Password'}
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                  <Button 
+                    variant="security" 
+                    size="sm"
+                    onClick={() => {
+                      setSelectedVault(vault.id)
+                      setIsAddingPassword(true)
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Password
+                  </Button>
                 </div>
 
                 {selectedVault === vault.id && passwords.length === 0 && (
@@ -969,6 +875,100 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
           </CardContent>
         </Card>
       )}
+
+      {/* Password Add/Edit Dialog - Outside of vault loop to prevent re-rendering */}
+      <Dialog open={isAddingPassword || !!editingPassword} onOpenChange={(open) => {
+        if (!open) {
+          setIsAddingPassword(false)
+          setEditingPassword(null)
+          setNewPassword({
+            title: '',
+            username: '',
+            password: '',
+            website_url: '',
+            notes: ''
+          })
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingPassword ? 'Edit Password' : 'Add New Password'}</DialogTitle>
+            <DialogDescription>
+              {editingPassword ? 'Update password details' : `Add a new password to ${currentVault?.name || 'vault'}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="password-title">Title</Label>
+              <Input
+                id="password-title"
+                placeholder="e.g., Gmail Account"
+                value={newPassword.title}
+                onChange={(e) => setNewPassword(prev => ({ ...prev, title: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="password-username">Username/Email</Label>
+              <Input
+                id="password-username"
+                placeholder="username@example.com"
+                value={newPassword.username}
+                onChange={(e) => setNewPassword(prev => ({ ...prev, username: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="password-password">Password {editingPassword && '(leave empty to keep current)'}</Label>
+              <Input
+                id="password-password"
+                type="password"
+                placeholder={editingPassword ? "Enter new password or leave empty" : "Enter password"}
+                value={newPassword.password}
+                onChange={(e) => setNewPassword(prev => ({ ...prev, password: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="password-url">Website URL</Label>
+              <Input
+                id="password-url"
+                placeholder="https://example.com"
+                value={newPassword.website_url}
+                onChange={(e) => setNewPassword(prev => ({ ...prev, website_url: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="password-notes">Notes</Label>
+              <Textarea
+                id="password-notes"
+                placeholder="Additional notes..."
+                value={newPassword.notes}
+                onChange={(e) => setNewPassword(prev => ({ ...prev, notes: e.target.value }))}
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => {
+                setIsAddingPassword(false)
+                setEditingPassword(null)
+                setNewPassword({
+                  title: '',
+                  username: '',
+                  password: '',
+                  website_url: '',
+                  notes: ''
+                })
+              }}>
+                Cancel
+              </Button>
+              <Button 
+                variant="security" 
+                onClick={editingPassword ? updatePassword : addPassword}
+                disabled={!newPassword.title.trim() || (!editingPassword && !newPassword.password.trim())}
+              >
+                {editingPassword ? 'Update Password' : 'Add Password'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
