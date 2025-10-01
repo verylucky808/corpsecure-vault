@@ -6,17 +6,17 @@
 
 @layer base {
   :root {
-    /* Background colors */
-    --background: 220 25% 8%;
-    --foreground: 210 10% 95%;
+    /* Background colors - Lighter for better visibility */
+    --background: 220 25% 12%;
+    --foreground: 210 10% 98%;
 
     /* Card colors */
-    --card: 220 20% 12%;
-    --card-foreground: 210 10% 95%;
+    --card: 220 20% 16%;
+    --card-foreground: 210 10% 98%;
 
     /* Popover colors */
-    --popover: 220 20% 10%;
-    --popover-foreground: 210 10% 95%;
+    --popover: 220 20% 14%;
+    --popover-foreground: 210 10% 98%;
 
     /* Primary brand colors - Deep security blue */
     --primary: 214 85% 45%;
