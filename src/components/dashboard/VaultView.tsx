@@ -20,8 +20,10 @@ import {
   Shield,
   Globe,
   User,
-  Lock
+  Lock,
+  ChevronDown
 } from 'lucide-react'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 
 interface Vault {
   id: string
@@ -55,6 +57,8 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
   const [isAddingVault, setIsAddingVault] = useState(false)
   const [isAddingPassword, setIsAddingPassword] = useState(false)
   const [editingPassword, setEditingPassword] = useState<Password | null>(null)
+  const [editingVault, setEditingVault] = useState<Vault | null>(null)
+  const [isVaultsExpanded, setIsVaultsExpanded] = useState(true)
   const { toast } = useToast()
 
   const [newVault, setNewVault] = useState({
@@ -140,21 +144,89 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const { data, error } = await supabase
+      if (editingVault) {
+        // Update existing vault
+        const { error } = await supabase
+          .from('vaults')
+          .update({
+            name: newVault.name,
+            description: newVault.description,
+            is_shared: newVault.is_shared,
+          })
+          .eq('id', editingVault.id)
+
+        if (error) {
+          toast({
+            title: "Error",
+            description: "Failed to update vault",
+            variant: "destructive",
+          })
+          return
+        }
+
+        toast({
+          title: "Success",
+          description: "Vault updated successfully",
+        })
+      } else {
+        // Create new vault
+        const { data, error } = await supabase
+          .from('vaults')
+          .insert([{
+            name: newVault.name,
+            description: newVault.description,
+            is_shared: newVault.is_shared,
+            owner_id: user.id
+          }])
+          .select()
+          .single()
+
+        if (error) {
+          toast({
+            title: "Error",
+            description: "Failed to create vault",
+            variant: "destructive",
+          })
+          return
+        }
+
+        toast({
+          title: "Success",
+          description: "Vault created successfully",
+        })
+      }
+
+      setNewVault({ name: '', description: '', is_shared: false })
+      setEditingVault(null)
+      setIsAddingVault(false)
+      loadVaults()
+      onStatsUpdate()
+    } catch (error) {
+      console.error('Error creating vault:', error)
+    }
+  }
+
+  const startEditVault = (vault: Vault) => {
+    setEditingVault(vault)
+    setNewVault({
+      name: vault.name,
+      description: vault.description || '',
+      is_shared: vault.is_shared
+    })
+    setIsAddingVault(true)
+  }
+
+  const deleteVault = async (vaultId: string) => {
+    try {
+      const { error } = await supabase
         .from('vaults')
-        .insert([{
-          name: newVault.name,
-          description: newVault.description,
-          is_shared: newVault.is_shared,
-          owner_id: user.id
-        }])
-        .select()
-        .single()
+        .delete()
+        .eq('id', vaultId)
 
       if (error) {
         toast({
           title: "Error",
-          description: "Failed to create vault",
+          description: "Failed to delete vault",
           variant: "destructive",
         })
         return
@@ -162,15 +234,13 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
 
       toast({
         title: "Success",
-        description: "Vault created successfully",
+        description: "Vault deleted successfully",
       })
 
-      setNewVault({ name: '', description: '', is_shared: false })
-      setIsAddingVault(false)
       loadVaults()
       onStatsUpdate()
     } catch (error) {
-      console.error('Error creating vault:', error)
+      console.error('Error deleting vault:', error)
     }
   }
 
@@ -354,7 +424,13 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
           <h2 className="text-3xl font-bold">Password Vaults</h2>
           <p className="text-muted-foreground">Securely store and manage your passwords</p>
         </div>
-        <Dialog open={isAddingVault} onOpenChange={setIsAddingVault}>
+        <Dialog open={isAddingVault} onOpenChange={(open) => {
+          setIsAddingVault(open)
+          if (!open) {
+            setEditingVault(null)
+            setNewVault({ name: '', description: '', is_shared: false })
+          }
+        }}>
           <DialogTrigger asChild>
             <Button variant="security">
               <Plus className="w-4 h-4 mr-2" />
@@ -363,9 +439,9 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create New Vault</DialogTitle>
+              <DialogTitle>{editingVault ? 'Edit Vault' : 'Create New Vault'}</DialogTitle>
               <DialogDescription>
-                Create a secure vault to organize your passwords
+                {editingVault ? 'Update vault settings' : 'Create a secure vault to organize your passwords'}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -398,7 +474,11 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
                 <Label htmlFor="vault-shared">Make this vault shared with team</Label>
               </div>
               <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setIsAddingVault(false)}>
+                <Button variant="outline" onClick={() => {
+                  setIsAddingVault(false)
+                  setEditingVault(null)
+                  setNewVault({ name: '', description: '', is_shared: false })
+                }}>
                   Cancel
                 </Button>
                 <Button 
@@ -406,7 +486,7 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
                   onClick={createVault}
                   disabled={!newVault.name.trim()}
                 >
-                  Create Vault
+                  {editingVault ? 'Update Vault' : 'Create Vault'}
                 </Button>
               </div>
             </div>
@@ -414,27 +494,60 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
         </Dialog>
       </div>
 
-      {/* Vault Selection */}
+      {/* Vaults List */}
       {vaults.length > 0 && (
         <div className="space-y-4">
-          <div className="flex items-center space-x-4">
-            <Label htmlFor="vault-select">Select Vault:</Label>
-            <Select value={selectedVault} onValueChange={setSelectedVault}>
-              <SelectTrigger className="w-64">
-                <SelectValue placeholder="Choose a vault" />
-              </SelectTrigger>
-              <SelectContent>
+          <Collapsible open={isVaultsExpanded} onOpenChange={setIsVaultsExpanded}>
+            <div className="flex items-center justify-between">
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent">
+                  <h3 className="text-lg font-semibold">Your Vaults ({vaults.length})</h3>
+                  <ChevronDown className={`w-5 h-5 transition-transform ${isVaultsExpanded ? 'rotate-180' : ''}`} />
+                </Button>
+              </CollapsibleTrigger>
+            </div>
+            <CollapsibleContent className="mt-4">
+              <div className="grid gap-3">
                 {vaults.map((vault) => (
-                  <SelectItem key={vault.id} value={vault.id}>
-                    <div className="flex items-center space-x-2">
-                      {vault.is_shared ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                      <span>{vault.name}</span>
-                    </div>
-                  </SelectItem>
+                  <Card 
+                    key={vault.id} 
+                    className={`cursor-pointer transition-all hover:border-primary/50 ${selectedVault === vault.id ? 'border-primary bg-primary/5' : ''}`}
+                    onClick={() => setSelectedVault(vault.id)}
+                  >
+                    <CardHeader className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 flex-1">
+                          {vault.is_shared ? <Globe className="w-5 h-5 text-muted-foreground" /> : <Lock className="w-5 h-5 text-muted-foreground" />}
+                          <div>
+                            <CardTitle className="text-base">{vault.name}</CardTitle>
+                            {vault.description && (
+                              <CardDescription className="text-sm mt-1">{vault.description}</CardDescription>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => startEditVault(vault)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteVault(vault.id)}
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                  </Card>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
 
           {currentVault && (
             <Card className="border-border/50">

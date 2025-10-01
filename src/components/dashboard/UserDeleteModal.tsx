@@ -86,13 +86,12 @@ export const UserDeleteModal = ({
 
         if (profileError) throw profileError
       } else {
-        // Hard delete: remove profile
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .delete()
-          .eq('user_id', userId)
+        // Hard delete: call edge function to delete user from auth
+        const { error: deleteError } = await supabase.functions.invoke('delete-user', {
+          body: { userId }
+        })
 
-        if (profileError) throw profileError
+        if (deleteError) throw deleteError
       }
 
       // Log the deletion

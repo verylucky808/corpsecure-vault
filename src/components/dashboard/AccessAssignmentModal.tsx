@@ -120,18 +120,22 @@ export const AccessAssignmentModal = ({
 
       if (addToAllVaults) {
         // Assign access to all vaults
-        const accessRecords = vaults.map((vault) => ({
-          user_id: userId,
-          vault_id: vault.id,
-          access_level: accessLevel,
-          granted_by: user.id,
-        }))
+        for (const vault of vaults) {
+          const { error } = await supabase
+            .from('vault_access_permissions')
+            .upsert({
+              user_id: userId,
+              vault_id: vault.id,
+              access_level: accessLevel,
+              granted_by: user.id,
+            }, {
+              onConflict: 'user_id,vault_id'
+            })
 
-        const { error } = await supabase
-          .from('vault_access_permissions')
-          .upsert(accessRecords)
-
-        if (error) throw error
+          if (error) {
+            console.error(`Error granting access to vault ${vault.id}:`, error)
+          }
+        }
 
         toast({
           title: 'Access granted',
@@ -155,6 +159,8 @@ export const AccessAssignmentModal = ({
             vault_id: selectedVaultId,
             access_level: accessLevel,
             granted_by: user.id,
+          }, {
+            onConflict: 'user_id,vault_id'
           })
 
         if (error) throw error
