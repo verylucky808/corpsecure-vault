@@ -547,49 +547,10 @@ export const Settings = () => {
                     Настроить 2FA
                   </Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {isAdmin && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <LockIcon className="h-5 w-5" />
-                  Требовать 2FA для просмотра паролей
-                </CardTitle>
-              <CardDescription>
-                Когда эта опция включена, для просмотра и копирования паролей всем пользователям системы потребуется активная двухфакторная аутентификация
-              </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <div className="font-medium">
-                      Защита паролей через 2FA (глобальная настройка)
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {requireMfaForPasswords ? 'Включено' : 'Выключено'}
-                    </div>
-                  </div>
-                  <Button
-                    variant={requireMfaForPasswords ? "destructive" : "default"}
-                    onClick={() => updateMfaRequirement(!requireMfaForPasswords)}
-                  >
-                    {requireMfaForPasswords ? 'Отключить' : 'Включить'}
-                  </Button>
-                </div>
-                {requireMfaForPasswords && !activeMfaFactor && (
-                  <Alert>
-                    <AlertDescription>
-                      ⚠️ У вас включена защита паролей через 2FA, но сама двухфакторная аутентификация не настроена. Настройте 2FA выше, чтобы получить доступ к паролям.
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
           )}
-        </TabsContent>
+        </CardContent>
+      </Card>
+    </TabsContent>
 
         <TabsContent value="organization" className="space-y-4">
           <Card>
@@ -615,6 +576,43 @@ export const Settings = () => {
               <Button onClick={updateCompanyName} disabled={savingCompanyName}>
                 {savingCompanyName ? 'Сохранение...' : 'Сохранить изменения'}
               </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <LockIcon className="h-5 w-5" />
+                Требовать 2FA для просмотра паролей
+              </CardTitle>
+              <CardDescription>
+                Когда эта опция включена, для просмотра и копирования паролей всем пользователям системы потребуется активная двухфакторная аутентификация
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="font-medium">
+                    Защита паролей через 2FA (глобальная настройка)
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {requireMfaForPasswords ? 'Включено' : 'Выключено'}
+                  </div>
+                </div>
+                <Button
+                  variant={requireMfaForPasswords ? "destructive" : "default"}
+                  onClick={() => updateMfaRequirement(!requireMfaForPasswords)}
+                >
+                  {requireMfaForPasswords ? 'Отключить' : 'Включить'}
+                </Button>
+              </div>
+              {requireMfaForPasswords && !activeMfaFactor && (
+                <Alert>
+                  <AlertDescription>
+                    ⚠️ У вас включена защита паролей через 2FA, но сама двухфакторная аутентификация не настроена. Настройте 2FA в разделе Безопасность, чтобы получить доступ к паролям.
+                  </AlertDescription>
+                </Alert>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
