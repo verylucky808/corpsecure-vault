@@ -8,7 +8,8 @@ import { VaultView } from './VaultView'
 import { PasswordGenerator } from './PasswordGenerator'
 import { UserManagement } from './UserManagement'
 import { AuditLogs } from './AuditLogs'
-import { Shield, LogOut, Key, Users, Settings, BarChart3 } from 'lucide-react'
+import { Settings } from './Settings'
+import { Shield, LogOut, Key, Users, Settings as SettingsIcon, BarChart3 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 interface User {
@@ -280,6 +281,7 @@ export const Dashboard = () => {
           {activeTab === 'generator' && <PasswordGenerator />}
           {activeTab === 'users' && <UserManagement />}
           {activeTab === 'logs' && <AuditLogs />}
+          {activeTab === 'settings' && <Settings />}
         </main>
       </div>
     </div>
