@@ -158,6 +158,31 @@ export const UserInvitationForm = () => {
     }
   }
 
+  const handleRevokeInvitation = async (invitationId: string, email: string) => {
+    try {
+      const { error } = await supabase
+        .from('invitation_tokens')
+        .update({ status: 'revoked' })
+        .eq('id', invitationId)
+
+      if (error) throw error
+
+      toast({
+        title: 'Invitation revoked',
+        description: `The invitation for ${email} has been revoked`,
+      })
+
+      loadInvitations()
+    } catch (error: any) {
+      console.error('Error revoking invitation:', error)
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to revoke invitation',
+        variant: 'destructive',
+      })
+    }
+  }
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending':
@@ -166,6 +191,8 @@ export const UserInvitationForm = () => {
         return <CheckCircle className="h-4 w-4 text-green-500" />
       case 'expired':
         return <XCircle className="h-4 w-4 text-red-500" />
+      case 'revoked':
+        return <XCircle className="h-4 w-4 text-destructive" />
       default:
         return null
     }
@@ -176,6 +203,7 @@ export const UserInvitationForm = () => {
       pending: 'secondary',
       accepted: 'default',
       expired: 'destructive',
+      revoked: 'destructive',
     }
     return (
       <Badge variant={variants[status] || 'outline'}>
@@ -311,14 +339,24 @@ export const UserInvitationForm = () => {
                     </TableCell>
                     <TableCell>
                       {invitation.status === 'pending' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleResendInvitation(invitation.email)}
-                        >
-                          <Send className="h-3 w-3 mr-1" />
-                          Resend
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleResendInvitation(invitation.email)}
+                          >
+                            <Send className="h-3 w-3 mr-1" />
+                            Resend
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleRevokeInvitation(invitation.id, invitation.email)}
+                          >
+                            <XCircle className="h-3 w-3 mr-1" />
+                            Revoke
+                          </Button>
+                        </div>
                       )}
                     </TableCell>
                   </TableRow>

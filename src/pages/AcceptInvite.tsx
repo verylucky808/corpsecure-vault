@@ -49,6 +49,23 @@ export const AcceptInvite = () => {
         .single()
 
       if (error || !data) {
+        // Check if invitation was revoked
+        const { data: revokedData } = await supabase
+          .from('invitation_tokens')
+          .select('status')
+          .eq('token', token)
+          .single()
+
+        if (revokedData?.status === 'revoked') {
+          setIsValid(false)
+          toast({
+            title: 'Error',
+            description: 'This invitation has been revoked',
+            variant: 'destructive',
+          })
+          return
+        }
+
         setIsValid(false)
         toast({
           title: 'Error',
