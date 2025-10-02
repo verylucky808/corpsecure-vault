@@ -124,23 +124,40 @@ export const UserManagement = () => {
 
   const changeUserRole = async (userId: string, newRole: string) => {
     try {
+      // Проверяем, не пытаемся ли убрать последнего администратора
+      if (newRole === 'пользователь') {
+        const adminCount = users.filter(u => u.roles.includes('администратор')).length
+        const isCurrentUserAdmin = users.find(u => u.user_id === userId)?.roles.includes('администратор')
+        
+        if (adminCount === 1 && isCurrentUserAdmin) {
+          toast({
+            title: 'Ошибка',
+            description: 'В системе должен остаться хотя бы один администратор',
+            variant: 'destructive',
+          })
+          return
+        }
+      }
+
       // Удаляем существующую роль
-      await supabase
+      const { error: deleteError } = await supabase
         .from('user_roles')
         .delete()
         .eq('user_id', userId)
 
+      if (deleteError) throw deleteError
+
       // Добавляем новую роль
       const { data: { user } } = await supabase.auth.getUser()
-      const { error } = await supabase
+      const { error: insertError } = await supabase
         .from('user_roles')
-        .insert([{
+        .insert({
           user_id: userId,
           role: newRole as 'администратор' | 'пользователь',
           assigned_by: user?.id
-        }])
+        })
 
-      if (error) throw error
+      if (insertError) throw insertError
 
       await logEvent({
         action: 'change_user_role',
@@ -273,7 +290,7 @@ export const UserManagement = () => {
                                   <Settings2 className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-56 bg-background">
+                              <DropdownMenuContent align="end" className="w-56 bg-popover z-50">
                                 <DropdownMenuLabel>Изменить роль</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem 
