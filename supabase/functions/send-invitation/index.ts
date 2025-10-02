@@ -15,6 +15,7 @@ interface InvitationRequest {
   role: "admin" | "moderator" | "user";
   invitedBy: string;
   appUrl: string;
+  isResend?: boolean;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -28,14 +29,12 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { email, role, invitedBy, appUrl }: InvitationRequest = await req.json();
+    const { email, role, invitedBy, appUrl, isResend }: InvitationRequest = await req.json();
 
-    console.log("Processing invitation for:", email, "with role:", role, "appUrl:", appUrl);
+    console.log("Processing invitation for:", email, "with role:", role, "appUrl:", appUrl, "isResend:", isResend);
 
-    // Generate unique token
-    const token = crypto.randomUUID();
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // Expires in 7 days
+    let token: string;
+    let invitation: any;
 
     // Check if user already exists
     const { data: existingProfile } = await supabase
@@ -48,22 +47,63 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Inviter profile not found");
     }
 
-    // Store invitation token
-    const { data: invitation, error: invitationError } = await supabase
-      .from("invitation_tokens")
-      .insert({
-        email,
-        token,
-        expires_at: expiresAt.toISOString(),
-        invited_by: invitedBy,
-        status: "pending",
-      })
-      .select()
-      .single();
+    if (isResend) {
+      // Find existing pending invitation and update it
+      const { data: existingInvitation } = await supabase
+        .from("invitation_tokens")
+        .select("*")
+        .eq("email", email)
+        .eq("status", "pending")
+        .single();
 
-    if (invitationError) {
-      console.error("Error creating invitation:", invitationError);
-      throw invitationError;
+      if (existingInvitation) {
+        // Generate new token and extend expiry
+        token = crypto.randomUUID();
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 7);
+
+        const { data: updated, error: updateError } = await supabase
+          .from("invitation_tokens")
+          .update({
+            token,
+            expires_at: expiresAt.toISOString(),
+            created_at: new Date().toISOString(),
+          })
+          .eq("id", existingInvitation.id)
+          .select()
+          .single();
+
+        if (updateError) {
+          console.error("Error updating invitation:", updateError);
+          throw updateError;
+        }
+        invitation = updated;
+      } else {
+        throw new Error("No pending invitation found for this email");
+      }
+    } else {
+      // Create new invitation
+      token = crypto.randomUUID();
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      const { data: newInvitation, error: invitationError } = await supabase
+        .from("invitation_tokens")
+        .insert({
+          email,
+          token,
+          expires_at: expiresAt.toISOString(),
+          invited_by: invitedBy,
+          status: "pending",
+        })
+        .select()
+        .single();
+
+      if (invitationError) {
+        console.error("Error creating invitation:", invitationError);
+        throw invitationError;
+      }
+      invitation = newInvitation;
     }
 
     // Create invitation link

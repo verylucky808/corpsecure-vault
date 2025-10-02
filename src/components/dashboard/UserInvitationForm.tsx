@@ -97,6 +97,7 @@ export const UserInvitationForm = () => {
           role: values.role,
           invitedBy: user.id,
           appUrl: window.location.origin,
+          isResend: false,
         },
       })
 
@@ -118,6 +119,42 @@ export const UserInvitationForm = () => {
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleResendInvitation = async (email: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        throw new Error('User not authenticated')
+      }
+
+      const { data, error } = await supabase.functions.invoke('send-invitation', {
+        body: {
+          email,
+          role: 'user',
+          invitedBy: user.id,
+          appUrl: window.location.origin,
+          isResend: true,
+        },
+      })
+
+      if (error) throw error
+
+      toast({
+        title: 'Invitation resent!',
+        description: `A new invitation has been sent to ${email}`,
+      })
+
+      loadInvitations()
+    } catch (error: any) {
+      console.error('Error resending invitation:', error)
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to resend invitation',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -251,6 +288,7 @@ export const UserInvitationForm = () => {
                   <TableHead>Status</TableHead>
                   <TableHead>Sent</TableHead>
                   <TableHead>Expires</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -270,6 +308,18 @@ export const UserInvitationForm = () => {
                     </TableCell>
                     <TableCell>
                       {new Date(invitation.expires_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      {invitation.status === 'pending' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleResendInvitation(invitation.email)}
+                        >
+                          <Send className="h-3 w-3 mr-1" />
+                          Resend
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
