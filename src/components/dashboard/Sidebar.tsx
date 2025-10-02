@@ -66,7 +66,7 @@ export const Sidebar = ({ user, activeTab, onTabChange, onSignOut }: SidebarProp
         {menuItems.map((item) => {
           const Icon = item.icon
           const isActive = activeTab === item.id
-          const isAdmin = user?.role === 'admin'
+          const isAdmin = user?.role === 'администратор'
           
           // Hide admin-only items for non-admins
           if (item.adminOnly && !isAdmin) {

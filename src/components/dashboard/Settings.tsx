@@ -41,7 +41,7 @@ export const Settings = () => {
 
       const { data, error } = await supabase.rpc('has_role', {
         _user_id: user.id,
-        _role: 'admin'
+        _role: 'администратор'
       })
 
       if (!error && data) {

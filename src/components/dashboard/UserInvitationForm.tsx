@@ -43,7 +43,7 @@ import { Badge } from '@/components/ui/badge'
 
 const invitationSchema = z.object({
   email: z.string().email({ message: 'Неверный адрес электронной почты' }),
-  role: z.enum(['admin', 'moderator', 'user']),
+  role: z.enum(['администратор', 'модератор', 'пользователь']),
 })
 
 type InvitationFormValues = z.infer<typeof invitationSchema>
@@ -66,7 +66,7 @@ export const UserInvitationForm = () => {
     resolver: zodResolver(invitationSchema),
     defaultValues: {
       email: '',
-      role: 'user',
+      role: 'пользователь',
     },
   })
 
@@ -141,7 +141,7 @@ export const UserInvitationForm = () => {
       const { data, error } = await supabase.functions.invoke('send-invitation', {
         body: {
           email,
-          role: 'user',
+          role: 'пользователь',
           invitedBy: user.id,
           appUrl: window.location.origin,
           isResend: true,
@@ -282,9 +282,9 @@ export const UserInvitationForm = () => {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="user">Пользователь</SelectItem>
-                        <SelectItem value="moderator">Модератор</SelectItem>
-                        <SelectItem value="admin">Администратор</SelectItem>
+                        <SelectItem value="пользователь">Пользователь</SelectItem>
+                        <SelectItem value="модератор">Модератор</SelectItem>
+                        <SelectItem value="администратор">Администратор</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormDescription>

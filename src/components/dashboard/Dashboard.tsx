@@ -71,7 +71,7 @@ export const Dashboard = () => {
         id: user.id,
         email: user.email || '',
         full_name: profile?.full_name,
-        role: userRole?.role || 'user'
+        role: userRole?.role || 'пользователь'
       })
     } catch (error) {
       console.error('Error checking user:', error)

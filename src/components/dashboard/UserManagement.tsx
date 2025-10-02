@@ -56,7 +56,7 @@ export const UserManagement = () => {
 
     const { data } = await supabase.rpc('has_role', {
       _user_id: user.id,
-      _role: 'admin',
+      _role: 'администратор',
     })
 
     setIsAdmin(data === true)
@@ -94,7 +94,7 @@ export const UserManagement = () => {
           return {
             ...profile,
             email: 'Email not available',
-            roles: roles.length > 0 ? roles : ['user'],
+            roles: roles.length > 0 ? roles : ['пользователь'],
           }
         })
 
