@@ -80,6 +80,8 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
   const [editingPassword, setEditingPassword] = useState<Password | null>(null)
   const [editingVault, setEditingVault] = useState<Vault | null>(null)
   const [expandedVaults, setExpandedVaults] = useState<Record<string, boolean>>({})
+  const [requireMfaForPasswords, setRequireMfaForPasswords] = useState(false)
+  const [hasMfaEnabled, setHasMfaEnabled] = useState(false)
   const { toast } = useToast()
   const { logEvent } = useAuditLog()
 
@@ -99,7 +101,33 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
 
   useEffect(() => {
     loadVaults()
+    checkMfaSettings()
   }, [])
+
+  const checkMfaSettings = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Check if user has MFA requirement enabled
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('require_mfa_for_passwords')
+        .eq('user_id', user.id)
+        .single()
+
+      if (profile) {
+        setRequireMfaForPasswords(profile.require_mfa_for_passwords || false)
+      }
+
+      // Check if user has MFA enabled
+      const { data: factors } = await supabase.auth.mfa.listFactors()
+      const hasActiveMfa = factors?.totp?.some(f => f.status === 'verified') || false
+      setHasMfaEnabled(hasActiveMfa)
+    } catch (error) {
+      console.error('Error checking MFA settings:', error)
+    }
+  }
 
   useEffect(() => {
     if (selectedVault) {
@@ -377,6 +405,16 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
   }
 
   const togglePasswordVisibility = async (passwordId: string) => {
+    // Check if MFA is required and not enabled
+    if (requireMfaForPasswords && !hasMfaEnabled) {
+      toast({
+        title: "Требуется 2FA",
+        description: "Для просмотра паролей необходимо включить двухфакторную аутентификацию в настройках",
+        variant: "destructive",
+      })
+      return
+    }
+
     const isShowing = !showPasswords[passwordId]
     
     setShowPasswords(prev => ({
@@ -398,7 +436,17 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
     }
   }
 
-  const copyToClipboard = async (text: string, type: string) => {
+  const copyToClipboard = async (text: string, type: string, isPassword: boolean = false) => {
+    // Check if MFA is required for passwords and not enabled
+    if (isPassword && requireMfaForPasswords && !hasMfaEnabled) {
+      toast({
+        title: "Требуется 2FA",
+        description: "Для копирования паролей необходимо включить двухфакторную аутентификацию в настройках",
+        variant: "destructive",
+      })
+      return
+    }
+
     try {
       await navigator.clipboard.writeText(text)
       toast({
@@ -765,7 +813,8 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
                       size="sm"
                       onClick={() => copyToClipboard(
                         decryptPassword(password.encrypted_password), 
-                        'Password'
+                        'Password',
+                        true
                       )}
                     >
                       <Copy className="w-3 h-3" />

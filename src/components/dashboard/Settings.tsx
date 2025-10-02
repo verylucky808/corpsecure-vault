@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { User, Shield, CheckCircle, XCircle, Copy, Smartphone } from 'lucide-react'
+import { User, Shield, CheckCircle, XCircle, Copy, Smartphone, Lock as LockIcon } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import QRCode from 'qrcode'
 import type { Factor } from '@supabase/supabase-js'
@@ -21,6 +21,7 @@ export const Settings = () => {
   const [verificationCode, setVerificationCode] = useState('')
   const [showMfaSetup, setShowMfaSetup] = useState(false)
   const [currentFactorId, setCurrentFactorId] = useState('')
+  const [requireMfaForPasswords, setRequireMfaForPasswords] = useState(false)
   const { toast } = useToast()
   const { logEvent } = useAuditLog()
 
@@ -36,15 +37,52 @@ export const Settings = () => {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('full_name')
+        .select('full_name, require_mfa_for_passwords')
         .eq('user_id', user.id)
         .single()
 
       if (profile) {
         setFullName(profile.full_name || '')
+        setRequireMfaForPasswords(profile.require_mfa_for_passwords || false)
       }
     } catch (error) {
       console.error('Error loading profile:', error)
+    }
+  }
+
+  const updateMfaRequirement = async (enabled: boolean) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ require_mfa_for_passwords: enabled })
+        .eq('user_id', user.id)
+
+      if (error) throw error
+
+      setRequireMfaForPasswords(enabled)
+
+      await logEvent({
+        action: enabled ? 'enable_mfa_requirement_for_passwords' : 'disable_mfa_requirement_for_passwords',
+        resource_type: 'profile',
+        resource_id: user.id,
+        details: { require_mfa_for_passwords: enabled }
+      })
+
+      toast({
+        title: 'Настройки обновлены',
+        description: enabled 
+          ? '2FA теперь требуется для просмотра паролей' 
+          : '2FA больше не требуется для просмотра паролей',
+      })
+    } catch (error: any) {
+      toast({
+        title: 'Ошибка',
+        description: error.message,
+        variant: 'destructive',
+      })
     }
   }
 
@@ -360,6 +398,43 @@ export const Settings = () => {
                     Настроить 2FA
                   </Button>
                 </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <LockIcon className="h-5 w-5" />
+                Требовать 2FA для просмотра паролей
+              </CardTitle>
+              <CardDescription>
+                Когда эта опция включена, для просмотра и копирования паролей потребуется активная двухфакторная аутентификация
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="font-medium">
+                    Защита паролей через 2FA
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {requireMfaForPasswords ? 'Включено' : 'Выключено'}
+                  </div>
+                </div>
+                <Button
+                  variant={requireMfaForPasswords ? "destructive" : "default"}
+                  onClick={() => updateMfaRequirement(!requireMfaForPasswords)}
+                >
+                  {requireMfaForPasswords ? 'Отключить' : 'Включить'}
+                </Button>
+              </div>
+              {requireMfaForPasswords && !activeMfaFactor && (
+                <Alert>
+                  <AlertDescription>
+                    ⚠️ У вас включена защита паролей через 2FA, но сама двухфакторная аутентификация не настроена. Настройте 2FA выше, чтобы получить доступ к паролям.
+                  </AlertDescription>
+                </Alert>
               )}
             </CardContent>
           </Card>
