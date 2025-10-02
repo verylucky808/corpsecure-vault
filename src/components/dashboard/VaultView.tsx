@@ -655,7 +655,7 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
         <Card className="p-4 border-border/30">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-2 flex-1">
-              <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing mt-1">
+              <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing self-center">
                 <GripVertical className="w-4 h-4 text-muted-foreground" />
               </div>
               <div className="flex-1 space-y-2">
