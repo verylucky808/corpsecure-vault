@@ -23,7 +23,8 @@ import {
   User,
   Lock,
   ChevronDown,
-  GripVertical
+  GripVertical,
+  Search
 } from 'lucide-react'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
@@ -73,6 +74,7 @@ interface VaultViewProps {
 export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
   const [vaults, setVaults] = useState<Vault[]>([])
   const [passwords, setPasswords] = useState<Password[]>([])
+  const [allPasswords, setAllPasswords] = useState<Password[]>([])
   const [selectedVault, setSelectedVault] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({})
@@ -85,6 +87,7 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
   const [hasMfaEnabled, setHasMfaEnabled] = useState(false)
   const [vaultPermissions, setVaultPermissions] = useState<Record<string, string>>({})
   const [currentUserId, setCurrentUserId] = useState<string>('')
+  const [searchQuery, setSearchQuery] = useState('')
   const { toast } = useToast()
   const { logEvent } = useAuditLog()
 
@@ -105,7 +108,26 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
   useEffect(() => {
     loadVaults()
     checkMfaSettings()
+    loadAllPasswords()
   }, [])
+
+  const loadAllPasswords = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('passwords')
+        .select('*')
+        .order('display_order', { ascending: true })
+
+      if (error) {
+        console.error('Error loading all passwords:', error)
+        return
+      }
+
+      setAllPasswords(data || [])
+    } catch (error) {
+      console.error('Error loading all passwords:', error)
+    }
+  }
 
   const checkMfaSettings = async () => {
     try {
@@ -117,7 +139,7 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
         .from('system_settings')
         .select('value')
         .eq('key', 'require_mfa_for_passwords')
-        .single()
+        .maybeSingle()
 
       if (settings) {
         setRequireMfaForPasswords(settings.value as boolean)
@@ -137,6 +159,34 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
       loadPasswords(selectedVault)
     }
   }, [selectedVault])
+
+  // Search effect - expand vaults with matching passwords
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      const matchingVaultIds = new Set<string>()
+      const lowerQuery = searchQuery.toLowerCase()
+      
+      allPasswords.forEach(password => {
+        if (
+          password.title.toLowerCase().includes(lowerQuery) ||
+          password.username.toLowerCase().includes(lowerQuery) ||
+          password.website_url.toLowerCase().includes(lowerQuery)
+        ) {
+          matchingVaultIds.add(password.vault_id)
+        }
+      })
+
+      // Expand vaults with matching passwords
+      const newExpandedVaults: Record<string, boolean> = {}
+      vaults.forEach(vault => {
+        newExpandedVaults[vault.id] = matchingVaultIds.has(vault.id)
+        if (matchingVaultIds.has(vault.id) && !selectedVault) {
+          setSelectedVault(vault.id)
+        }
+      })
+      setExpandedVaults(newExpandedVaults)
+    }
+  }, [searchQuery, allPasswords, vaults])
 
   const toggleVaultExpanded = (vaultId: string) => {
     setExpandedVaults(prev => ({
@@ -303,6 +353,7 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
       setEditingVault(null)
       setIsAddingVault(false)
       loadVaults()
+      loadAllPasswords()
       onStatsUpdate()
     } catch (error) {
       console.error('Error creating vault:', error)
@@ -348,6 +399,7 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
       })
 
       loadVaults()
+      loadAllPasswords()
       onStatsUpdate()
     } catch (error) {
       console.error('Error deleting vault:', error)
@@ -416,6 +468,7 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
       })
       setIsAddingPassword(false)
       loadPasswords(selectedVault)
+      loadAllPasswords()
       onStatsUpdate()
     } catch (error) {
       console.error('Error adding password:', error)
@@ -533,6 +586,7 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
         notes: ''
       })
       loadPasswords(selectedVault)
+      loadAllPasswords()
     } catch (error) {
       console.error('Error updating password:', error)
     }
@@ -567,6 +621,7 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
       })
 
       loadPasswords(selectedVault)
+      loadAllPasswords()
       onStatsUpdate()
     } catch (error) {
       console.error('Error deleting password:', error)
@@ -582,6 +637,18 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
       website_url: password.website_url,
       notes: password.notes
     })
+  }
+
+  // Check if password matches search query
+  const isPasswordMatchingSearch = (password: Password): boolean => {
+    if (!searchQuery.trim()) return false
+    
+    const lowerQuery = searchQuery.toLowerCase()
+    return (
+      password.title.toLowerCase().includes(lowerQuery) ||
+      password.username.toLowerCase().includes(lowerQuery) ||
+      password.website_url.toLowerCase().includes(lowerQuery)
+    )
   }
 
   const sensors = useSensors(
@@ -810,9 +877,13 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
       transition,
     }
 
+    const isHighlighted = isPasswordMatchingSearch(password)
+
     return (
       <div ref={setNodeRef} style={style}>
-        <Card className="p-4 bg-card-vault border-border/40 shadow-sm">
+        <Card className={`p-4 bg-card-vault border-border/40 shadow-sm transition-all ${
+          isHighlighted ? 'ring-2 ring-primary bg-primary/5' : ''
+        }`}>
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-2 flex-1">
               <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing self-center">
@@ -1002,6 +1073,19 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Search Field */}
+      {vaults.length > 0 && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Поиск по названию, пользователю или сайту..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+      )}
 
       {/* Vaults List */}
       {vaults.length > 0 && (
