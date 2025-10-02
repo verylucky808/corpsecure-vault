@@ -161,7 +161,7 @@ export const UserManagement = () => {
       </div>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="users">
             <Users className="h-4 w-4 mr-2" />
             Пользователи
@@ -169,10 +169,6 @@ export const UserManagement = () => {
           <TabsTrigger value="invite">
             <UserPlus className="h-4 w-4 mr-2" />
             Пригласить
-          </TabsTrigger>
-          <TabsTrigger value="access">
-            <Shield className="h-4 w-4 mr-2" />
-            Контроль доступа
           </TabsTrigger>
         </TabsList>
 
@@ -247,19 +243,6 @@ export const UserManagement = () => {
 
         <TabsContent value="invite">
           <UserInvitationForm />
-        </TabsContent>
-
-        <TabsContent value="access">
-          <Card>
-            <CardHeader>
-              <CardTitle>Обзор контроля доступа</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                Выберите пользователя на вкладке "Пользователи" и нажмите на значок щита, чтобы управлять его правами доступа к хранилищам.
-              </p>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
 
