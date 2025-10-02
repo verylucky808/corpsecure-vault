@@ -28,7 +28,7 @@ const menuItems = [
   { id: 'overview', label: 'Обзор', icon: BarChart3 },
   { id: 'vaults', label: 'Хранилища паролей', icon: Vault },
   { id: 'generator', label: 'Генератор паролей', icon: Key },
-  { id: 'users', label: 'Управление пользователями', icon: Users },
+  { id: 'users', label: 'Пользователи', icon: Users, adminOnly: true },
   { id: 'logs', label: 'Журнал событий', icon: FileText, adminOnly: true },
   { id: 'settings', label: 'Настройки', icon: Settings },
 ]
