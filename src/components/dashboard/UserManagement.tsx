@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Users, Shield, Trash2, UserPlus } from 'lucide-react'
+import { Users, Shield, Trash2, UserPlus, Settings2 } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { useAuditLog } from '@/hooks/useAuditLog'
@@ -14,6 +14,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
 import { UserInvitationForm } from './UserInvitationForm'
 import { AccessAssignmentModal } from './AccessAssignmentModal'
@@ -111,6 +119,49 @@ export const UserManagement = () => {
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const changeUserRole = async (userId: string, newRole: string) => {
+    try {
+      // Удаляем существующую роль
+      await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId)
+
+      // Добавляем новую роль
+      const { data: { user } } = await supabase.auth.getUser()
+      const { error } = await supabase
+        .from('user_roles')
+        .insert([{
+          user_id: userId,
+          role: newRole as 'администратор' | 'пользователь',
+          assigned_by: user?.id
+        }])
+
+      if (error) throw error
+
+      await logEvent({
+        action: 'change_user_role',
+        resource_type: 'user_roles',
+        resource_id: userId,
+        details: { new_role: newRole }
+      })
+
+      toast({
+        title: 'Успешно',
+        description: 'Роль пользователя изменена',
+      })
+
+      loadUsers()
+    } catch (error: any) {
+      console.error('Error changing user role:', error)
+      toast({
+        title: 'Ошибка',
+        description: error.message || 'Не удалось изменить роль пользователя',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -216,6 +267,29 @@ export const UserManagement = () => {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                  <Settings2 className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-56 bg-background">
+                                <DropdownMenuLabel>Изменить роль</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  onClick={() => changeUserRole(user.user_id, 'пользователь')}
+                                  disabled={user.roles.includes('пользователь')}
+                                >
+                                  Пользователь
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => changeUserRole(user.user_id, 'администратор')}
+                                  disabled={user.roles.includes('администратор')}
+                                >
+                                  Администратор
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                             <Button
                               variant="outline"
                               size="sm"
