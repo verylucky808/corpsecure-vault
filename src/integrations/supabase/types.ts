@@ -174,7 +174,6 @@ export type Database = {
           department: string | null
           full_name: string | null
           id: string
-          require_mfa_for_passwords: boolean | null
           role: string | null
           updated_at: string
           user_id: string
@@ -184,7 +183,6 @@ export type Database = {
           department?: string | null
           full_name?: string | null
           id?: string
-          require_mfa_for_passwords?: boolean | null
           role?: string | null
           updated_at?: string
           user_id: string
@@ -194,10 +192,33 @@ export type Database = {
           department?: string | null
           full_name?: string | null
           id?: string
-          require_mfa_for_passwords?: boolean | null
           role?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      system_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string | null
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value?: Json
         }
         Relationships: []
       }

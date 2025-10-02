@@ -109,15 +109,15 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      // Check if user has MFA requirement enabled
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('require_mfa_for_passwords')
-        .eq('user_id', user.id)
+      // Check global MFA requirement setting
+      const { data: settings } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'require_mfa_for_passwords')
         .single()
 
-      if (profile) {
-        setRequireMfaForPasswords(profile.require_mfa_for_passwords || false)
+      if (settings) {
+        setRequireMfaForPasswords(settings.value as boolean)
       }
 
       // Check if user has MFA enabled

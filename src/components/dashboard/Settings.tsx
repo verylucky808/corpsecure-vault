@@ -57,13 +57,23 @@ export const Settings = () => {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('full_name, require_mfa_for_passwords')
+        .select('full_name')
         .eq('user_id', user.id)
         .single()
 
       if (profile) {
         setFullName(profile.full_name || '')
-        setRequireMfaForPasswords(profile.require_mfa_for_passwords || false)
+      }
+
+      // Load global MFA requirement setting
+      const { data: settings } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'require_mfa_for_passwords')
+        .single()
+
+      if (settings) {
+        setRequireMfaForPasswords(settings.value as boolean)
       }
     } catch (error) {
       console.error('Error loading profile:', error)
@@ -76,9 +86,13 @@ export const Settings = () => {
       if (!user) return
 
       const { error } = await supabase
-        .from('profiles')
-        .update({ require_mfa_for_passwords: enabled })
-        .eq('user_id', user.id)
+        .from('system_settings')
+        .update({ 
+          value: enabled,
+          updated_by: user.id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('key', 'require_mfa_for_passwords')
 
       if (error) throw error
 
@@ -86,15 +100,15 @@ export const Settings = () => {
 
       await logEvent({
         action: enabled ? 'enable_mfa_requirement_for_passwords' : 'disable_mfa_requirement_for_passwords',
-        resource_type: 'profile',
-        resource_id: user.id,
+        resource_type: 'system_settings',
+        resource_id: 'require_mfa_for_passwords',
         details: { require_mfa_for_passwords: enabled }
       })
 
       toast({
         title: 'Настройки обновлены',
         description: enabled 
-          ? '2FA теперь требуется для просмотра паролей' 
+          ? '2FA теперь требуется для просмотра паролей всем пользователям' 
           : '2FA больше не требуется для просмотра паролей',
       })
     } catch (error: any) {
@@ -429,15 +443,15 @@ export const Settings = () => {
                   <LockIcon className="h-5 w-5" />
                   Требовать 2FA для просмотра паролей
                 </CardTitle>
-                <CardDescription>
-                  Когда эта опция включена, для просмотра и копирования паролей потребуется активная двухфакторная аутентификация
-                </CardDescription>
+              <CardDescription>
+                Когда эта опция включена, для просмотра и копирования паролей всем пользователям системы потребуется активная двухфакторная аутентификация
+              </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <div className="font-medium">
-                      Защита паролей через 2FA
+                      Защита паролей через 2FA (глобальная настройка)
                     </div>
                     <div className="text-sm text-muted-foreground">
                       {requireMfaForPasswords ? 'Включено' : 'Выключено'}
