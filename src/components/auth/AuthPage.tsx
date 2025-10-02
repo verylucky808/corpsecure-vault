@@ -32,22 +32,22 @@ export const AuthPage = () => {
 
   const validateForm = (isSignUp: boolean) => {
     if (!formData.email || !formData.password) {
-      setError('All fields are required')
+      setError('Все поля обязательны для заполнения')
       return false
     }
     
     if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      setError('Please enter a valid email address')
+      setError('Пожалуйста, введите корректный email адрес')
       return false
     }
 
     if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters long')
+      setError('Пароль должен содержать минимум 8 символов')
       return false
     }
 
     if (isSignUp && !formData.fullName?.trim()) {
-      setError('Full name is required')
+      setError('Полное имя обязательно для заполнения')
       return false
     }
 
@@ -70,13 +70,13 @@ export const AuthPage = () => {
         setError(error.message)
       } else {
         toast({
-          title: "Welcome back!",
-          description: "You have successfully signed in.",
+          title: "С возвращением!",
+          description: "Вы успешно вошли в систему.",
         })
         navigate('/dashboard')
       }
     } catch (err) {
-      setError('An unexpected error occurred')
+      setError('Произошла непредвиденная ошибка')
     } finally {
       setLoading(false)
     }
@@ -104,13 +104,13 @@ export const AuthPage = () => {
         setError(error.message)
       } else {
         toast({
-          title: "Account created!",
-          description: "Welcome to CorpPassSecure. You can now start managing your passwords securely.",
+          title: "Аккаунт создан!",
+          description: "Добро пожаловать в CorpPassSecure. Теперь вы можете безопасно управлять паролями.",
         })
         navigate('/dashboard')
       }
     } catch (err) {
-      setError('An unexpected error occurred')
+      setError('Произошла непредвиденная ошибка')
     } finally {
       setLoading(false)
     }
@@ -127,22 +127,22 @@ export const AuthPage = () => {
             <Shield className="h-8 w-8 text-primary" />
             <h1 className="text-2xl font-bold">CorpPassSecure</h1>
           </div>
-          <p className="text-muted-foreground">Enterprise Password Management</p>
+          <p className="text-muted-foreground">Корпоративное управление паролями</p>
         </div>
 
         {/* Auth Form */}
         <Card className="border-border/50 shadow-card">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-xl">Authentication</CardTitle>
+            <CardTitle className="text-xl">Аутентификация</CardTitle>
             <CardDescription>
-              Sign in to your account or create a new one
+              Войдите в свой аккаунт или создайте новый
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="signin" className="space-y-4">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                <TabsTrigger value="signin">Вход</TabsTrigger>
+                <TabsTrigger value="signup">Регистрация</TabsTrigger>
               </TabsList>
 
               {error && (
@@ -164,12 +164,12 @@ export const AuthPage = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
+                  <Label htmlFor="signin-password">Пароль</Label>
                   <div className="relative">
                     <Input
                       id="signin-password"
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Enter your password"
+                      placeholder="Введите пароль"
                       value={formData.password}
                       onChange={(e) => handleInputChange('password', e.target.value)}
                       className="h-11 pr-10"
@@ -194,12 +194,12 @@ export const AuthPage = () => {
                   {loading ? (
                     <div className="flex items-center space-x-2">
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Signing in...</span>
+                      <span>Вход...</span>
                     </div>
                   ) : (
                     <>
                       <Lock className="w-4 h-4" />
-                      Sign In
+                      Войти
                     </>
                   )}
                 </Button>
@@ -207,11 +207,11 @@ export const AuthPage = () => {
 
               <TabsContent value="signup" className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-name">Full Name</Label>
+                  <Label htmlFor="signup-name">Полное имя</Label>
                   <Input
                     id="signup-name"
                     type="text"
-                    placeholder="John Doe"
+                    placeholder="Иван Иванов"
                     value={formData.fullName}
                     onChange={(e) => handleInputChange('fullName', e.target.value)}
                     className="h-11"
@@ -229,12 +229,12 @@ export const AuthPage = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
+                  <Label htmlFor="signup-password">Пароль</Label>
                   <div className="relative">
                     <Input
                       id="signup-password"
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Create a strong password"
+                      placeholder="Создайте надёжный пароль"
                       value={formData.password}
                       onChange={(e) => handleInputChange('password', e.target.value)}
                       className="h-11 pr-10"
@@ -252,15 +252,15 @@ export const AuthPage = () => {
                   {formData.password && (
                     <div className="space-y-2">
                       <div className="flex justify-between text-xs">
-                        <span>Password Strength</span>
+                        <span>Надёжность пароля</span>
                         <span className={
                           passwordStrength.score >= 80 ? 'text-accent' :
                           passwordStrength.score >= 60 ? 'text-yellow-500' :
                           'text-destructive'
                         }>
-                          {passwordStrength.score >= 80 ? 'Strong' :
-                           passwordStrength.score >= 60 ? 'Good' :
-                           passwordStrength.score >= 40 ? 'Fair' : 'Weak'}
+                          {passwordStrength.score >= 80 ? 'Сильный' :
+                           passwordStrength.score >= 60 ? 'Хороший' :
+                           passwordStrength.score >= 40 ? 'Средний' : 'Слабый'}
                         </span>
                       </div>
                       <div className="w-full bg-muted rounded-full h-2">
@@ -285,12 +285,12 @@ export const AuthPage = () => {
                   {loading ? (
                     <div className="flex items-center space-x-2">
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Creating account...</span>
+                      <span>Создание аккаунта...</span>
                     </div>
                   ) : (
                     <>
                       <Shield className="w-4 h-4" />
-                      Create Account
+                      Создать аккаунт
                     </>
                   )}
                 </Button>
@@ -302,7 +302,7 @@ export const AuthPage = () => {
         {/* Security Notice */}
         <div className="text-center space-y-2">
           <p className="text-xs text-muted-foreground">
-            Your data is protected with enterprise-grade encryption
+            Ваши данные защищены корпоративным шифрованием
           </p>
           <div className="flex items-center justify-center space-x-4 text-xs text-muted-foreground">
             <span className="flex items-center space-x-1">
@@ -311,7 +311,7 @@ export const AuthPage = () => {
             </span>
             <span className="flex items-center space-x-1">
               <Lock className="h-3 w-3" />
-              <span>Zero-Knowledge</span>
+              <span>Нулевое разглашение</span>
             </span>
           </div>
         </div>
