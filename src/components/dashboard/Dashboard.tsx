@@ -67,9 +67,6 @@ export const Dashboard = () => {
         .eq('user_id', user.id)
         .maybeSingle()
 
-      console.log('User role from database:', userRole)
-      console.log('Final role value:', userRole?.role || 'пользователь')
-
       setUser({
         id: user.id,
         email: user.email || '',
