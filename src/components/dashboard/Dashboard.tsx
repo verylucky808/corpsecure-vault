@@ -26,6 +26,10 @@ interface DashboardStats {
   weakPasswords: number
 }
 
+interface SystemSettings {
+  companyName: string
+}
+
 export const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
@@ -36,12 +40,14 @@ export const Dashboard = () => {
     sharedPasswords: 0,
     weakPasswords: 0
   })
+  const [companyName, setCompanyName] = useState('CorpPassSecure')
   const { toast } = useToast()
   const navigate = useNavigate()
 
   useEffect(() => {
     checkUser()
     loadDashboardStats()
+    loadCompanyName()
   }, [])
 
   const checkUser = async () => {
@@ -109,6 +115,22 @@ export const Dashboard = () => {
     }
   }
 
+  const loadCompanyName = async () => {
+    try {
+      const { data: companySettings } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'company_name')
+        .maybeSingle()
+
+      if (companySettings) {
+        setCompanyName(companySettings.value as string)
+      }
+    } catch (error) {
+      console.error('Error loading company name:', error)
+    }
+  }
+
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut()
@@ -155,7 +177,7 @@ export const Dashboard = () => {
             <div>
               <h1 className="text-2xl font-bold flex items-center space-x-2">
                 <Shield className="h-6 w-6 text-primary" />
-                <span>CorpPassSecure</span>
+                <span>{companyName}</span>
               </h1>
               <p className="text-muted-foreground">С возвращением, {user?.full_name || user?.email}</p>
             </div>
