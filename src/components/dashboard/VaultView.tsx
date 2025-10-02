@@ -822,13 +822,16 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
                 <div className="flex items-center space-x-2">
                   <h4 className="font-medium">{password.title}</h4>
                   {password.website_url && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => window.open(password.website_url, '_blank')}
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                    </Button>
+                    <>
+                      <span className="text-sm text-muted-foreground">{password.website_url}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => window.open(password.website_url, '_blank')}
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                      </Button>
+                    </>
                   )}
                 </div>
                 <div className="text-sm text-muted-foreground space-y-1">
