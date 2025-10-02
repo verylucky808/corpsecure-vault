@@ -58,11 +58,18 @@ export const Dashboard = () => {
         .eq('user_id', user.id)
         .single()
 
+      // Get user role from user_roles table
+      const { data: userRole } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single()
+
       setUser({
         id: user.id,
         email: user.email || '',
         full_name: profile?.full_name,
-        role: profile?.role
+        role: userRole?.role || 'user'
       })
     } catch (error) {
       console.error('Error checking user:', error)

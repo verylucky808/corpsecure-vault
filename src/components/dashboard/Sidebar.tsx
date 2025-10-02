@@ -53,7 +53,7 @@ export const Sidebar = ({ user, activeTab, onTabChange, onSignOut }: SidebarProp
           <div className="flex items-center space-x-1">
             <div className="w-2 h-2 bg-accent rounded-full"></div>
             <span className="text-xs text-muted-foreground capitalize">
-              {user?.role || 'user'} access
+              {user?.role || 'user'}
             </span>
           </div>
         </div>
