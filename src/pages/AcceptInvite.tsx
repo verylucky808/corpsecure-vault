@@ -41,53 +41,38 @@ export const AcceptInvite = () => {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('invitation_tokens')
-        .select('*')
-        .eq('token', token)
-        .eq('status', 'pending')
-        .single()
+      // Use secure edge function to validate token
+      const { data, error } = await supabase.functions.invoke('validate-invitation-token', {
+        body: { token }
+      })
 
-      if (error || !data) {
-        // Check if invitation was revoked
-        const { data: revokedData } = await supabase
-          .from('invitation_tokens')
-          .select('status')
-          .eq('token', token)
-          .single()
+      if (error) {
+        console.error('Error validating token:', error)
+        setIsValid(false)
+        toast({
+          title: 'Error',
+          description: 'Failed to validate invitation',
+          variant: 'destructive',
+        })
+        setValidating(false)
+        setLoading(false)
+        return
+      }
 
-        if (revokedData?.status === 'revoked') {
-          setIsValid(false)
-          toast({
-            title: 'Error',
-            description: 'This invitation has been revoked',
-            variant: 'destructive',
-          })
-          return
-        }
-
+      if (!data.valid) {
         setIsValid(false)
         toast({
           title: 'Error',
           description: 'Invalid or expired invitation',
           variant: 'destructive',
         })
+        setValidating(false)
+        setLoading(false)
         return
       }
 
-      // Check if expired
-      const expiresAt = new Date(data.expires_at)
-      if (expiresAt < new Date()) {
-        setIsValid(false)
-        toast({
-          title: 'Error',
-          description: 'This invitation has expired',
-          variant: 'destructive',
-        })
-        return
-      }
-
-      setInvitationData(data)
+      // Store minimal data needed
+      setInvitationData({ email: data.email, token })
       setEmail(data.email)
       setIsValid(true)
     } catch (error) {
