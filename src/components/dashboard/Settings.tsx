@@ -22,13 +22,33 @@ export const Settings = () => {
   const [showMfaSetup, setShowMfaSetup] = useState(false)
   const [currentFactorId, setCurrentFactorId] = useState('')
   const [requireMfaForPasswords, setRequireMfaForPasswords] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   const { toast } = useToast()
   const { logEvent } = useAuditLog()
 
   useEffect(() => {
     loadUserProfile()
     loadMfaFactors()
+    checkAdminRole()
   }, [])
+
+  const checkAdminRole = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data, error } = await supabase.rpc('has_role', {
+        _user_id: user.id,
+        _role: 'admin'
+      })
+
+      if (!error && data) {
+        setIsAdmin(true)
+      }
+    } catch (error) {
+      console.error('Error checking admin role:', error)
+    }
+  }
 
   const loadUserProfile = async () => {
     try {
@@ -402,42 +422,44 @@ export const Settings = () => {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <LockIcon className="h-5 w-5" />
-                Требовать 2FA для просмотра паролей
-              </CardTitle>
-              <CardDescription>
-                Когда эта опция включена, для просмотра и копирования паролей потребуется активная двухфакторная аутентификация
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <div className="font-medium">
-                    Защита паролей через 2FA
+          {isAdmin && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <LockIcon className="h-5 w-5" />
+                  Требовать 2FA для просмотра паролей
+                </CardTitle>
+                <CardDescription>
+                  Когда эта опция включена, для просмотра и копирования паролей потребуется активная двухфакторная аутентификация
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <div className="font-medium">
+                      Защита паролей через 2FA
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {requireMfaForPasswords ? 'Включено' : 'Выключено'}
+                    </div>
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    {requireMfaForPasswords ? 'Включено' : 'Выключено'}
-                  </div>
+                  <Button
+                    variant={requireMfaForPasswords ? "destructive" : "default"}
+                    onClick={() => updateMfaRequirement(!requireMfaForPasswords)}
+                  >
+                    {requireMfaForPasswords ? 'Отключить' : 'Включить'}
+                  </Button>
                 </div>
-                <Button
-                  variant={requireMfaForPasswords ? "destructive" : "default"}
-                  onClick={() => updateMfaRequirement(!requireMfaForPasswords)}
-                >
-                  {requireMfaForPasswords ? 'Отключить' : 'Включить'}
-                </Button>
-              </div>
-              {requireMfaForPasswords && !activeMfaFactor && (
-                <Alert>
-                  <AlertDescription>
-                    ⚠️ У вас включена защита паролей через 2FA, но сама двухфакторная аутентификация не настроена. Настройте 2FA выше, чтобы получить доступ к паролям.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </CardContent>
-          </Card>
+                {requireMfaForPasswords && !activeMfaFactor && (
+                  <Alert>
+                    <AlertDescription>
+                      ⚠️ У вас включена защита паролей через 2FA, но сама двухфакторная аутентификация не настроена. Настройте 2FA выше, чтобы получить доступ к паролям.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>
