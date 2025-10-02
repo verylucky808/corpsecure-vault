@@ -120,10 +120,10 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
+      // Load all vaults (RLS policies will filter based on ownership and access permissions)
       const { data, error } = await supabase
         .from('vaults')
         .select('*')
-        .eq('owner_id', user.id)
         .order('display_order', { ascending: true })
 
       if (error) {
