@@ -204,11 +204,17 @@ export const Settings = () => {
         return
       }
 
-      // Используем verify вместо challengeAndVerify для первичной настройки
+      // Для первичной верификации TOTP используем challengeAndVerify
+      const challenge = await supabase.auth.mfa.challenge({ factorId: currentFactorId })
+      
+      if (challenge.error) {
+        throw challenge.error
+      }
+
       const { data, error } = await supabase.auth.mfa.verify({
         factorId: currentFactorId,
+        challengeId: challenge.data.id,
         code: verificationCode,
-        challengeId: '' // Пустой challengeId для первичной верификации
       })
 
       if (error) throw error
