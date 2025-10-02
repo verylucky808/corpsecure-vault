@@ -405,14 +405,16 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
   }
 
   const togglePasswordVisibility = async (passwordId: string) => {
-    // Check if MFA is required and not enabled
-    if (requireMfaForPasswords && !hasMfaEnabled) {
-      toast({
-        title: "Требуется 2FA",
-        description: "Для просмотра паролей необходимо включить двухфакторную аутентификацию в настройках",
-        variant: "destructive",
-      })
-      return
+    // Check if MFA is enabled when it's required
+    if (requireMfaForPasswords) {
+      if (!hasMfaEnabled) {
+        toast({
+          title: "Требуется 2FA",
+          description: "Для просмотра паролей необходимо включить двухфакторную аутентификацию в настройках",
+          variant: "destructive",
+        })
+        return
+      }
     }
 
     const isShowing = !showPasswords[passwordId]
@@ -437,14 +439,16 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
   }
 
   const copyToClipboard = async (text: string, type: string, isPassword: boolean = false) => {
-    // Check if MFA is required for passwords and not enabled
-    if (isPassword && requireMfaForPasswords && !hasMfaEnabled) {
-      toast({
-        title: "Требуется 2FA",
-        description: "Для копирования паролей необходимо включить двухфакторную аутентификацию в настройках",
-        variant: "destructive",
-      })
-      return
+    // Check if MFA is enabled when it's required for passwords
+    if (isPassword && requireMfaForPasswords) {
+      if (!hasMfaEnabled) {
+        toast({
+          title: "Требуется 2FA",
+          description: "Для копирования паролей необходимо включить двухфакторную аутентификацию в настройках",
+          variant: "destructive",
+        })
+        return
+      }
     }
 
     try {

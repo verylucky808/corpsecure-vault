@@ -138,15 +138,15 @@ export const AccessAssignmentModal = ({
         }
 
         toast({
-          title: 'Access granted',
-          description: `Granted ${accessLevel} access to all vaults`,
+          title: 'Доступ предоставлен',
+          description: `Предоставлен доступ уровня ${accessLevel} ко всем хранилищам`,
         })
       } else {
         // Assign access to selected vault
         if (!selectedVaultId) {
           toast({
-            title: 'Error',
-            description: 'Please select a vault',
+            title: 'Ошибка',
+            description: 'Пожалуйста, выберите хранилище',
             variant: 'destructive',
           })
           return
@@ -166,8 +166,8 @@ export const AccessAssignmentModal = ({
         if (error) throw error
 
         toast({
-          title: 'Access granted',
-          description: `Granted ${accessLevel} access to selected vault`,
+          title: 'Доступ предоставлен',
+          description: `Предоставлен доступ уровня ${accessLevel} к выбранному хранилищу`,
         })
       }
 
@@ -189,8 +189,8 @@ export const AccessAssignmentModal = ({
     } catch (error: any) {
       console.error('Error assigning access:', error)
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to assign access',
+        title: 'Ошибка',
+        description: error.message || 'Не удалось назначить доступ',
         variant: 'destructive',
       })
     } finally {
@@ -222,16 +222,16 @@ export const AccessAssignmentModal = ({
       })
 
       toast({
-        title: 'Access revoked',
-        description: 'Vault access has been revoked',
+        title: 'Доступ отозван',
+        description: 'Доступ к хранилищу успешно отозван',
       })
 
       loadCurrentAccess()
     } catch (error: any) {
       console.error('Error revoking access:', error)
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to revoke access',
+        title: 'Ошибка',
+        description: error.message || 'Не удалось отозвать доступ',
         variant: 'destructive',
       })
     }
@@ -260,9 +260,9 @@ export const AccessAssignmentModal = ({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Assign New Access */}
+          {/* Назначение нового доступа */}
           <div className="space-y-4 border-b pb-4">
-            <h3 className="font-medium">Assign New Access</h3>
+            <h3 className="font-medium">Назначить новый доступ</h3>
             
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -270,15 +270,15 @@ export const AccessAssignmentModal = ({
                 checked={addToAllVaults}
                 onCheckedChange={(checked) => setAddToAllVaults(checked as boolean)}
               />
-              <Label htmlFor="all-vaults">Add to all vaults</Label>
+              <Label htmlFor="all-vaults">Добавить ко всем хранилищам</Label>
             </div>
 
             {!addToAllVaults && (
               <div className="space-y-2">
-                <Label>Select Vault</Label>
+                <Label>Выбрать хранилище</Label>
                 <Select value={selectedVaultId} onValueChange={setSelectedVaultId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose a vault" />
+                    <SelectValue placeholder="Выберите хранилище" />
                   </SelectTrigger>
                   <SelectContent>
                     {vaults.map((vault) => (
@@ -292,15 +292,15 @@ export const AccessAssignmentModal = ({
             )}
 
             <div className="space-y-2">
-              <Label>Access Level</Label>
+              <Label>Уровень доступа</Label>
               <Select value={accessLevel} onValueChange={setAccessLevel}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="read">Read Only</SelectItem>
-                  <SelectItem value="edit">Edit</SelectItem>
-                  <SelectItem value="full">Full Control</SelectItem>
+                  <SelectItem value="read">Только чтение</SelectItem>
+                  <SelectItem value="edit">Редактирование</SelectItem>
+                  <SelectItem value="full">Полный контроль</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -311,24 +311,24 @@ export const AccessAssignmentModal = ({
               className="w-full"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Assign Access
+              Назначить доступ
             </Button>
           </div>
 
-          {/* Current Access */}
+          {/* Текущие доступы */}
           <div className="space-y-4">
-            <h3 className="font-medium">Current Access</h3>
+            <h3 className="font-medium">Текущие доступы</h3>
             {currentAccess.length === 0 ? (
               <p className="text-center text-muted-foreground py-4">
-                No vault access assigned yet
+                Доступ к хранилищам пока не назначен
               </p>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Vault</TableHead>
-                    <TableHead>Access Level</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>Хранилище</TableHead>
+                    <TableHead>Уровень доступа</TableHead>
+                    <TableHead className="text-right">Действия</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -359,7 +359,7 @@ export const AccessAssignmentModal = ({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
+            Закрыть
           </Button>
         </DialogFooter>
       </DialogContent>
