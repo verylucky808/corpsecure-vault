@@ -116,31 +116,33 @@ export const AcceptInvite = () => {
       return
     }
 
-    if (password.length < 6) {
-      toast({
-        title: 'Error',
-        description: 'Password must be at least 6 characters',
-        variant: 'destructive',
-      })
-      return
-    }
-
     setCreatingAccount(true)
 
     try {
+      // Validate all inputs
+      const { registrationSchema } = await import('@/lib/validation')
+      const validatedData = registrationSchema.parse({
+        email: email,
+        password: password,
+        fullName: fullName
+      })
+
       // Create auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
+        email: validatedData.email,
+        password: validatedData.password,
         options: {
           emailRedirectTo: `${window.location.origin}/dashboard`,
+          data: {
+            full_name: validatedData.fullName,
+          }
         },
       })
 
       if (authError) throw authError
 
       if (!authData.user) {
-        throw new Error('Failed to create user')
+        throw new Error('Failed to create account')
       }
 
       // Profile and role will be created automatically by the handle_new_user trigger
@@ -165,16 +167,17 @@ export const AcceptInvite = () => {
 
       // Sign in the user
       await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: validatedData.email,
+        password: validatedData.password,
       })
 
       navigate('/dashboard')
     } catch (error: any) {
       console.error('Error accepting invitation:', error)
+      const message = error.issues?.[0]?.message || error.message || 'Failed to create account'
       toast({
         title: 'Error',
-        description: error.message || 'Failed to create account',
+        description: message,
         variant: 'destructive',
       })
     } finally {

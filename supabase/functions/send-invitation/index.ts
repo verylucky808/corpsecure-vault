@@ -158,8 +158,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.error("Error in send-invitation function:", error);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
-        details: error.toString() 
+        error: "Failed to send invitation. Please try again."
       }),
       {
         status: 500,

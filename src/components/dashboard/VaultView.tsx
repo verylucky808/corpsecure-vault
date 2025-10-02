@@ -419,7 +419,7 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user || !selectedVault) return
 
-      const encryptedPassword = encryptPassword(newPassword.password)
+      const encryptedPassword = await encryptPassword(newPassword.password)
 
       // Get max display_order for this vault
       const { data: maxOrderData } = await supabase
@@ -549,7 +549,7 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
       if (!editingPassword) return
 
       const encryptedPassword = newPassword.password 
-        ? encryptPassword(newPassword.password)
+        ? await encryptPassword(newPassword.password)
         : editingPassword.encrypted_password
 
       const { error } = await supabase
@@ -934,7 +934,7 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
                     <Lock className="w-3 h-3" />
                     <span>
                       {showPasswords[password.id] 
-                        ? decryptPassword(password.encrypted_password)
+                        ? '(decrypting...)'
                         : '••••••••'
                       }
                     </span>
@@ -951,11 +951,10 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => copyToClipboard(
-                        decryptPassword(password.encrypted_password), 
-                        'Пароль',
-                        true
-                      )}
+                      onClick={async () => {
+                        const decrypted = await decryptPassword(password.encrypted_password);
+                        copyToClipboard(decrypted, 'Пароль', true);
+                      }}
                     >
                       <Copy className="w-3 h-3" />
                     </Button>

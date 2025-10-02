@@ -172,9 +172,13 @@ export const Settings = () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
+      // Validate input
+      const { profileSchema } = await import('@/lib/validation')
+      const validatedData = profileSchema.parse({ full_name: fullName })
+
       const { error } = await supabase
         .from('profiles')
-        .update({ full_name: fullName })
+        .update({ full_name: validatedData.full_name })
         .eq('user_id', user.id)
 
       if (error) throw error
@@ -191,9 +195,10 @@ export const Settings = () => {
         description: 'Имя обновлено',
       })
     } catch (error: any) {
+      const message = error.issues?.[0]?.message || error.message || 'Не удалось обновить имя'
       toast({
         title: 'Ошибка',
-        description: error.message || 'Не удалось обновить имя',
+        description: message,
         variant: 'destructive',
       })
     } finally {
@@ -288,6 +293,35 @@ export const Settings = () => {
 
   const unenrollMFA = async (factorId: string) => {
     try {
+      // Require password confirmation before disabling MFA
+      const password = prompt("Введите ваш пароль для отключения 2FA:");
+      if (!password) {
+        toast({
+          variant: "destructive",
+          title: "Отменено",
+          description: "Отключение 2FA отменено",
+        })
+        return
+      }
+
+      // Verify password by attempting to reauthenticate
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user?.email) throw new Error("Email пользователя не найден")
+
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: password,
+      })
+
+      if (authError) {
+        toast({
+          variant: "destructive",
+          title: "Ошибка",
+          description: "Неверный пароль. 2FA не был отключен.",
+        })
+        return
+      }
+
       const { error } = await supabase.auth.mfa.unenroll({ factorId })
 
       if (error) throw error
@@ -307,7 +341,7 @@ export const Settings = () => {
     } catch (error: any) {
       toast({
         title: 'Ошибка',
-        description: error.message || 'Не удалось отключить 2FA',
+        description: 'Не удалось отключить 2FA. Пожалуйста, попробуйте снова.',
         variant: 'destructive',
       })
     }
@@ -327,6 +361,10 @@ export const Settings = () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
+      // Validate input
+      const { companyNameSchema } = await import('@/lib/validation')
+      const validatedData = companyNameSchema.parse({ company_name: companyName })
+
       // Проверяем, существует ли настройка
       const { data: existing } = await supabase
         .from('system_settings')
@@ -339,7 +377,7 @@ export const Settings = () => {
         const { error } = await supabase
           .from('system_settings')
           .update({ 
-            value: companyName,
+            value: validatedData.company_name,
             updated_by: user.id,
             updated_at: new Date().toISOString()
           })
@@ -352,7 +390,7 @@ export const Settings = () => {
           .from('system_settings')
           .insert({
             key: 'company_name',
-            value: companyName,
+            value: validatedData.company_name,
             updated_by: user.id
           })
 
@@ -363,7 +401,7 @@ export const Settings = () => {
         action: 'update_company_name',
         resource_type: 'system_settings',
         resource_id: 'company_name',
-        details: { company_name: companyName }
+        details: { company_name: validatedData.company_name }
       })
 
       toast({
@@ -371,9 +409,10 @@ export const Settings = () => {
         description: 'Название компании обновлено',
       })
     } catch (error: any) {
+      const message = error.issues?.[0]?.message || error.message || 'Не удалось обновить название компании'
       toast({
         title: 'Ошибка',
-        description: error.message || 'Не удалось обновить название компании',
+        description: message,
         variant: 'destructive',
       })
     } finally {

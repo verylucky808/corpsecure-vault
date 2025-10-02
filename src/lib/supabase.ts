@@ -1,14 +1,73 @@
 // Re-export the auto-generated Supabase client
 export { supabase } from '@/integrations/supabase/client'
 
-// Simple encryption/decryption utilities (for demo purposes)
-// In production, use more robust encryption
-export const encryptPassword = (password: string): string => {
-  return btoa(password) // Base64 encoding for demo
+// Encryption/decryption utilities using Web Crypto API
+export const encryptPassword = async (password: string): Promise<string> => {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(password)
+  
+  // Generate a random key for encryption
+  const key = await window.crypto.subtle.generateKey(
+    { name: 'AES-GCM', length: 256 },
+    true,
+    ['encrypt', 'decrypt']
+  )
+  
+  // Generate a random IV
+  const iv = window.crypto.getRandomValues(new Uint8Array(12))
+  
+  // Encrypt the data
+  const encryptedData = await window.crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    data
+  )
+  
+  // Export the key
+  const exportedKey = await window.crypto.subtle.exportKey('raw', key)
+  
+  // Combine key, IV, and encrypted data
+  const combined = new Uint8Array(exportedKey.byteLength + iv.length + encryptedData.byteLength)
+  combined.set(new Uint8Array(exportedKey), 0)
+  combined.set(iv, exportedKey.byteLength)
+  combined.set(new Uint8Array(encryptedData), exportedKey.byteLength + iv.length)
+  
+  // Convert to base64 for storage
+  return btoa(String.fromCharCode(...combined))
 }
 
-export const decryptPassword = (encryptedPassword: string): string => {
-  return atob(encryptedPassword) // Base64 decoding for demo
+export const decryptPassword = async (encryptedPassword: string): Promise<string> => {
+  try {
+    // Decode from base64
+    const combined = Uint8Array.from(atob(encryptedPassword), c => c.charCodeAt(0))
+    
+    // Extract key, IV, and encrypted data
+    const keyData = combined.slice(0, 32)
+    const iv = combined.slice(32, 44)
+    const encryptedData = combined.slice(44)
+    
+    // Import the key
+    const key = await window.crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['decrypt']
+    )
+    
+    // Decrypt the data
+    const decryptedData = await window.crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv },
+      key,
+      encryptedData
+    )
+    
+    const decoder = new TextDecoder()
+    return decoder.decode(decryptedData)
+  } catch (error) {
+    console.error('Decryption failed')
+    throw new Error('Failed to decrypt password')
+  }
 }
 
 // Password strength checker
