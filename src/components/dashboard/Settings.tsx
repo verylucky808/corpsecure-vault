@@ -169,6 +169,15 @@ export const Settings = () => {
 
   const enrollMFA = async () => {
     try {
+      // Сначала проверяем и удаляем все незавершённые факторы
+      const existingFactors = mfaFactors.filter(
+        f => f.friendly_name === 'Google Authenticator' && f.status !== 'verified'
+      )
+      
+      for (const factor of existingFactors) {
+        await supabase.auth.mfa.unenroll({ factorId: factor.id })
+      }
+
       const { data, error } = await supabase.auth.mfa.enroll({
         factorType: 'totp',
         friendlyName: 'Google Authenticator'
