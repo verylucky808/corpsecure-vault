@@ -652,7 +652,7 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
 
     return (
       <div ref={setNodeRef} style={style}>
-        <Card className="p-4 border-border/30">
+        <Card className="p-4 bg-card-vault border-border/40 shadow-sm">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-2 flex-1">
               <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing self-center">

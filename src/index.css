@@ -13,6 +13,8 @@
     /* Card colors */
     --card: 220 20% 16%;
     --card-foreground: 210 10% 98%;
+    --card-vault: 220 18% 19%;
+    --card-vault-foreground: 210 10% 98%;
 
     /* Popover colors */
     --popover: 220 20% 14%;
