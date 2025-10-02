@@ -23,6 +23,8 @@ export const Settings = () => {
   const [currentFactorId, setCurrentFactorId] = useState('')
   const [requireMfaForPasswords, setRequireMfaForPasswords] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [companyName, setCompanyName] = useState('CorpPassSecure')
+  const [savingCompanyName, setSavingCompanyName] = useState(false)
   const { toast } = useToast()
   const { logEvent } = useAuditLog()
 
@@ -66,14 +68,25 @@ export const Settings = () => {
       }
 
       // Load global MFA requirement setting
-      const { data: settings } = await supabase
+      const { data: mfaSettings } = await supabase
         .from('system_settings')
         .select('value')
         .eq('key', 'require_mfa_for_passwords')
         .single()
 
-      if (settings) {
-        setRequireMfaForPasswords(settings.value as boolean)
+      if (mfaSettings) {
+        setRequireMfaForPasswords(mfaSettings.value as boolean)
+      }
+
+      // Load company name setting
+      const { data: companySettings } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'company_name')
+        .maybeSingle()
+
+      if (companySettings) {
+        setCompanyName(companySettings.value as string)
       }
     } catch (error) {
       console.error('Error loading profile:', error)
@@ -287,6 +300,66 @@ export const Settings = () => {
     })
   }
 
+  const updateCompanyName = async () => {
+    setSavingCompanyName(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Проверяем, существует ли настройка
+      const { data: existing } = await supabase
+        .from('system_settings')
+        .select('id')
+        .eq('key', 'company_name')
+        .maybeSingle()
+
+      if (existing) {
+        // Обновляем существующую
+        const { error } = await supabase
+          .from('system_settings')
+          .update({ 
+            value: companyName,
+            updated_by: user.id,
+            updated_at: new Date().toISOString()
+          })
+          .eq('key', 'company_name')
+
+        if (error) throw error
+      } else {
+        // Создаём новую
+        const { error } = await supabase
+          .from('system_settings')
+          .insert({
+            key: 'company_name',
+            value: companyName,
+            updated_by: user.id
+          })
+
+        if (error) throw error
+      }
+
+      await logEvent({
+        action: 'update_company_name',
+        resource_type: 'system_settings',
+        resource_id: 'company_name',
+        details: { company_name: companyName }
+      })
+
+      toast({
+        title: 'Успешно',
+        description: 'Название компании обновлено',
+      })
+    } catch (error: any) {
+      toast({
+        title: 'Ошибка',
+        description: error.message || 'Не удалось обновить название компании',
+        variant: 'destructive',
+      })
+    } finally {
+      setSavingCompanyName(false)
+    }
+  }
+
   const activeMfaFactor = mfaFactors.find(f => f.status === 'verified' && f.friendly_name)
 
   return (
@@ -297,7 +370,7 @@ export const Settings = () => {
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-3' : 'grid-cols-2'}`}>
           <TabsTrigger value="profile">
             <User className="h-4 w-4 mr-2" />
             Профиль
@@ -306,6 +379,12 @@ export const Settings = () => {
             <Shield className="h-4 w-4 mr-2" />
             Безопасность
           </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="organization">
+              <LockIcon className="h-4 w-4 mr-2" />
+              Организация
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="profile" className="space-y-4">
@@ -489,6 +568,34 @@ export const Settings = () => {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        <TabsContent value="organization" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Настройки организации</CardTitle>
+              <CardDescription>
+                Управление общими настройками компании
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="companyName">Название компании</Label>
+                <Input
+                  id="companyName"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  placeholder="Введите название вашей компании"
+                />
+                <p className="text-sm text-muted-foreground">
+                  Это название будет отображаться во всех интерфейсах системы
+                </p>
+              </div>
+              <Button onClick={updateCompanyName} disabled={savingCompanyName}>
+                {savingCompanyName ? 'Сохранение...' : 'Сохранить изменения'}
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
