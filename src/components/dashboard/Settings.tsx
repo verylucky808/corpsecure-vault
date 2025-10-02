@@ -20,6 +20,7 @@ export const Settings = () => {
   const [totpSecret, setTotpSecret] = useState('')
   const [verificationCode, setVerificationCode] = useState('')
   const [showMfaSetup, setShowMfaSetup] = useState(false)
+  const [currentFactorId, setCurrentFactorId] = useState('')
   const { toast } = useToast()
   const { logEvent } = useAuditLog()
 
@@ -103,6 +104,9 @@ export const Settings = () => {
 
       if (error) throw error
 
+      // Сохраняем ID фактора для последующей верификации
+      setCurrentFactorId(data.id)
+
       // Generate QR code
       const qrCodeUrl = await QRCode.toDataURL(data.totp.uri)
       setQrCode(qrCodeUrl)
@@ -119,21 +123,20 @@ export const Settings = () => {
 
   const verifyAndEnableMFA = async () => {
     try {
-      const factors = await supabase.auth.mfa.listFactors()
-      if (!factors.data?.totp?.[0]) {
+      if (!currentFactorId) {
         toast({
           title: 'Ошибка',
-          description: 'Фактор MFA не найден',
+          description: 'Необходимо сначала настроить 2FA',
           variant: 'destructive',
         })
         return
       }
 
-      const factorId = factors.data.totp[0].id
-
-      const { data, error } = await supabase.auth.mfa.challengeAndVerify({
-        factorId,
+      // Используем verify вместо challengeAndVerify для первичной настройки
+      const { data, error } = await supabase.auth.mfa.verify({
+        factorId: currentFactorId,
         code: verificationCode,
+        challengeId: '' // Пустой challengeId для первичной верификации
       })
 
       if (error) throw error
@@ -151,6 +154,7 @@ export const Settings = () => {
 
       setShowMfaSetup(false)
       setVerificationCode('')
+      setCurrentFactorId('')
       loadMfaFactors()
     } catch (error: any) {
       toast({
@@ -327,6 +331,7 @@ export const Settings = () => {
                           onClick={() => {
                             setShowMfaSetup(false)
                             setVerificationCode('')
+                            setCurrentFactorId('')
                           }}
                           className="flex-1"
                         >
