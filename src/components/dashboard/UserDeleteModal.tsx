@@ -108,8 +108,8 @@ export const UserDeleteModal = ({
       })
 
       toast({
-        title: 'User deleted',
-        description: `User ${userName} has been ${softDelete ? 'deactivated' : 'permanently deleted'}`,
+        title: 'Пользователь удалён',
+        description: `Пользователь ${userName} был ${softDelete ? 'деактивирован' : 'удалён навсегда'}`,
       })
 
       onOpenChange(false)
@@ -117,8 +117,8 @@ export const UserDeleteModal = ({
     } catch (error: any) {
       console.error('Error deleting user:', error)
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to delete user',
+        title: 'Ошибка',
+        description: error.message || 'Не удалось удалить пользователя',
         variant: 'destructive',
       })
     } finally {
@@ -132,19 +132,19 @@ export const UserDeleteModal = ({
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2 text-destructive">
             <AlertTriangle className="h-5 w-5" />
-            Delete User
+            Удалить пользователя
           </AlertDialogTitle>
           <AlertDialogDescription className="space-y-4">
             <p>
-              Are you sure you want to delete <strong>{userName}</strong> ({userEmail})?
+              Вы уверены, что хотите удалить <strong>{userName}</strong> ({userEmail})?
             </p>
             <div className="bg-muted p-4 rounded-md space-y-2">
-              <p className="font-medium text-foreground">This action will:</p>
+              <p className="font-medium text-foreground">Это действие:</p>
               <ul className="list-disc list-inside space-y-1 text-sm">
-                <li>Revoke access to all vaults</li>
-                <li>Remove from all groups</li>
-                <li>Delete all assigned roles</li>
-                <li>{softDelete ? 'Mark user as deleted (recoverable)' : 'Permanently delete user data (NOT recoverable)'}</li>
+                <li>Отзовёт доступ ко всем хранилищам</li>
+                <li>Удалит из всех групп</li>
+                <li>Удалит все назначенные роли</li>
+                <li>{softDelete ? 'Пометит пользователя как удалённого (восстанавливается)' : 'Удалит данные пользователя навсегда (НЕ восстанавливается)'}</li>
               </ul>
             </div>
             <div className="flex items-center space-x-2">
@@ -154,24 +154,24 @@ export const UserDeleteModal = ({
                 onCheckedChange={(checked) => setSoftDelete(checked as boolean)}
               />
               <Label htmlFor="soft-delete" className="text-sm font-normal">
-                Soft delete (recommended - allows recovery)
+                Мягкое удаление (рекомендуется - возможно восстановление)
               </Label>
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>Отмена</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
             disabled={loading}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
             {loading ? (
-              'Deleting...'
+              'Удаление...'
             ) : (
               <>
                 <Trash2 className="h-4 w-4 mr-2" />
-                Delete User
+                Удалить пользователя
               </>
             )}
           </AlertDialogAction>

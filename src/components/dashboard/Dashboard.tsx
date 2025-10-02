@@ -113,14 +113,14 @@ export const Dashboard = () => {
     try {
       await supabase.auth.signOut()
       toast({
-        title: "Signed out",
-        description: "You have been securely signed out.",
+        title: "Выход выполнен",
+        description: "Вы успешно вышли из системы.",
       })
       navigate('/auth')
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to sign out. Please try again.",
+        title: "Ошибка",
+        description: "Не удалось выйти. Попробуйте снова.",
         variant: "destructive",
       })
     }
@@ -131,7 +131,7 @@ export const Dashboard = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex items-center space-x-2">
           <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <span className="text-lg">Loading your secure workspace...</span>
+          <span className="text-lg">Загрузка рабочего пространства...</span>
         </div>
       </div>
     )
@@ -157,13 +157,13 @@ export const Dashboard = () => {
                 <Shield className="h-6 w-6 text-primary" />
                 <span>CorpPassSecure</span>
               </h1>
-              <p className="text-muted-foreground">Welcome back, {user?.full_name || user?.email}</p>
+              <p className="text-muted-foreground">С возвращением, {user?.full_name || user?.email}</p>
             </div>
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-muted-foreground capitalize">{user?.role || 'user'}</span>
+              <span className="text-sm text-muted-foreground capitalize">{user?.role || 'пользователь'}</span>
               <Button variant="outline" onClick={handleSignOut}>
                 <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
+                Выйти
               </Button>
             </div>
           </div>
@@ -174,60 +174,60 @@ export const Dashboard = () => {
           {activeTab === 'overview' && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-3xl font-bold mb-2">Security Overview</h2>
-                <p className="text-muted-foreground">Monitor your password security and vault activity</p>
+                <h2 className="text-3xl font-bold mb-2">Обзор безопасности</h2>
+                <p className="text-muted-foreground">Мониторинг безопасности паролей и активности хранилищ</p>
               </div>
 
               {/* Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <Card className="border-border/50">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Passwords</CardTitle>
+                    <CardTitle className="text-sm font-medium">Всего паролей</CardTitle>
                     <Key className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">{stats.totalPasswords}</div>
                     <p className="text-xs text-muted-foreground">
-                      Across {stats.totalVaults} vaults
+                      В {stats.totalVaults} хранилищах
                     </p>
                   </CardContent>
                 </Card>
 
                 <Card className="border-border/50">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Secure Vaults</CardTitle>
+                    <CardTitle className="text-sm font-medium">Защищённые хранилища</CardTitle>
                     <Shield className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">{stats.totalVaults}</div>
                     <p className="text-xs text-muted-foreground">
-                      Encrypted storage
+                      Зашифрованное хранение
                     </p>
                   </CardContent>
                 </Card>
 
                 <Card className="border-border/50">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Shared Access</CardTitle>
+                    <CardTitle className="text-sm font-medium">Общий доступ</CardTitle>
                     <Users className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">{stats.sharedPasswords}</div>
                     <p className="text-xs text-muted-foreground">
-                      Team collaboration
+                      Командная работа
                     </p>
                   </CardContent>
                 </Card>
 
                 <Card className="border-border/50">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Security Score</CardTitle>
+                    <CardTitle className="text-sm font-medium">Оценка безопасности</CardTitle>
                     <BarChart3 className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-accent">98%</div>
                     <p className="text-xs text-muted-foreground">
-                      Excellent security
+                      Отличная безопасность
                     </p>
                   </CardContent>
                 </Card>
@@ -236,8 +236,8 @@ export const Dashboard = () => {
               {/* Quick Actions */}
               <Card className="border-border/50">
                 <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
-                  <CardDescription>Common tasks to get you started</CardDescription>
+                  <CardTitle>Быстрые действия</CardTitle>
+                  <CardDescription>Основные задачи для начала работы</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -248,7 +248,7 @@ export const Dashboard = () => {
                     >
                       <div className="text-center">
                         <Shield className="h-6 w-6 mx-auto mb-1" />
-                        <div className="text-sm">Add Password</div>
+                        <div className="text-sm">Добавить пароль</div>
                       </div>
                     </Button>
                     <Button 
@@ -258,7 +258,7 @@ export const Dashboard = () => {
                     >
                       <div className="text-center">
                         <Key className="h-6 w-6 mx-auto mb-1" />
-                        <div className="text-sm">Generate Password</div>
+                        <div className="text-sm">Сгенерировать пароль</div>
                       </div>
                     </Button>
                     <Button 
@@ -268,7 +268,7 @@ export const Dashboard = () => {
                     >
                       <div className="text-center">
                         <Users className="h-6 w-6 mx-auto mb-1" />
-                        <div className="text-sm">Manage Team</div>
+                        <div className="text-sm">Управление командой</div>
                       </div>
                     </Button>
                   </div>

@@ -252,10 +252,10 @@ export const AccessAssignmentModal = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            Manage Vault Access - {userName}
+            Управление доступом к хранилищу - {userName}
           </DialogTitle>
           <DialogDescription>
-            Assign or revoke vault access permissions for this user
+            Назначить или отозвать права доступа к хранилищу для этого пользователя
           </DialogDescription>
         </DialogHeader>
 

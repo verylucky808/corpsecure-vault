@@ -42,7 +42,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 
 const invitationSchema = z.object({
-  email: z.string().email({ message: 'Invalid email address' }),
+  email: z.string().email({ message: 'Неверный адрес электронной почты' }),
   role: z.enum(['admin', 'moderator', 'user']),
 })
 
@@ -112,8 +112,8 @@ export const UserInvitationForm = () => {
       })
 
       toast({
-        title: 'Invitation sent!',
-        description: `An invitation has been sent to ${values.email}`,
+        title: 'Приглашение отправлено!',
+        description: `Приглашение отправлено на ${values.email}`,
       })
 
       form.reset()
@@ -121,8 +121,8 @@ export const UserInvitationForm = () => {
     } catch (error: any) {
       console.error('Error sending invitation:', error)
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to send invitation',
+        title: 'Ошибка',
+        description: error.message || 'Не удалось отправить приглашение',
         variant: 'destructive',
       })
     } finally {
@@ -151,16 +151,16 @@ export const UserInvitationForm = () => {
       if (error) throw error
 
       toast({
-        title: 'Invitation resent!',
-        description: `A new invitation has been sent to ${email}`,
+        title: 'Приглашение отправлено повторно!',
+        description: `Новое приглашение отправлено на ${email}`,
       })
 
       loadInvitations()
     } catch (error: any) {
       console.error('Error resending invitation:', error)
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to resend invitation',
+        title: 'Ошибка',
+        description: error.message || 'Не удалось отправить приглашение повторно',
         variant: 'destructive',
       })
     }
@@ -176,16 +176,16 @@ export const UserInvitationForm = () => {
       if (error) throw error
 
       toast({
-        title: 'Invitation revoked',
-        description: `The invitation for ${email} has been revoked`,
+        title: 'Приглашение отозвано',
+        description: `Приглашение для ${email} было отозвано`,
       })
 
       loadInvitations()
     } catch (error: any) {
       console.error('Error revoking invitation:', error)
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to revoke invitation',
+        title: 'Ошибка',
+        description: error.message || 'Не удалось отозвать приглашение',
         variant: 'destructive',
       })
     }
@@ -207,6 +207,12 @@ export const UserInvitationForm = () => {
   }
 
   const getStatusBadge = (status: string) => {
+    const statusNames: Record<string, string> = {
+      pending: 'Ожидает',
+      accepted: 'Принято',
+      expired: 'Истекло',
+      revoked: 'Отозвано',
+    }
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       pending: 'secondary',
       accepted: 'default',
@@ -215,7 +221,7 @@ export const UserInvitationForm = () => {
     }
     return (
       <Badge variant={variants[status] || 'outline'}>
-        {status}
+        {statusNames[status] || status}
       </Badge>
     )
   }
@@ -230,10 +236,10 @@ export const UserInvitationForm = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5" />
-            Invite New User
+            Пригласить нового пользователя
           </CardTitle>
           <CardDescription>
-            Send an email invitation to add a new user to CorpPassSecure
+            Отправить приглашение по электронной почте для добавления нового пользователя в CorpPassSecure
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -244,7 +250,7 @@ export const UserInvitationForm = () => {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email Address</FormLabel>
+                    <FormLabel>Адрес электронной почты</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="user@company.com"
@@ -253,7 +259,7 @@ export const UserInvitationForm = () => {
                       />
                     </FormControl>
                     <FormDescription>
-                      The user will receive an invitation link via email
+                      Пользователь получит ссылку-приглашение по электронной почте
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -265,24 +271,24 @@ export const UserInvitationForm = () => {
                 name="role"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Role</FormLabel>
+                    <FormLabel>Роль</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a role" />
+                          <SelectValue placeholder="Выберите роль" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="user">User</SelectItem>
-                        <SelectItem value="moderator">Moderator</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="user">Пользователь</SelectItem>
+                        <SelectItem value="moderator">Модератор</SelectItem>
+                        <SelectItem value="admin">Администратор</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      Assign a role for this user
+                      Назначить роль для этого пользователя
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -291,11 +297,11 @@ export const UserInvitationForm = () => {
 
               <Button type="submit" disabled={loading} className="w-full">
                 {loading ? (
-                  'Sending...'
+                  'Отправка...'
                 ) : (
                   <>
                     <Send className="h-4 w-4 mr-2" />
-                    Send Invitation
+                    Отправить приглашение
                   </>
                 )}
               </Button>
@@ -306,25 +312,25 @@ export const UserInvitationForm = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Pending Invitations</CardTitle>
+          <CardTitle>Ожидающие приглашения</CardTitle>
           <CardDescription>
-            Track the status of sent invitations
+            Отслеживание статуса отправленных приглашений
           </CardDescription>
         </CardHeader>
         <CardContent>
           {invitations.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
-              No invitations sent yet
+              Приглашения ещё не отправлены
             </p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Email</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Sent</TableHead>
-                  <TableHead>Expires</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead>Статус</TableHead>
+                  <TableHead>Отправлено</TableHead>
+                  <TableHead>Истекает</TableHead>
+                  <TableHead>Действия</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -354,7 +360,7 @@ export const UserInvitationForm = () => {
                             onClick={() => handleResendInvitation(invitation.email)}
                           >
                             <Send className="h-3 w-3 mr-1" />
-                            Resend
+                            Повторить
                           </Button>
                           <Button
                             variant="destructive"
@@ -362,7 +368,7 @@ export const UserInvitationForm = () => {
                             onClick={() => handleRevokeInvitation(invitation.id, invitation.email)}
                           >
                             <XCircle className="h-3 w-3 mr-1" />
-                            Revoke
+                            Отозвать
                           </Button>
                         </div>
                       )}

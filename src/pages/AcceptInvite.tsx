@@ -239,9 +239,9 @@ export const AcceptInvite = () => {
           <div className="flex justify-center mb-4">
             <Shield className="h-16 w-16 text-primary" />
           </div>
-          <CardTitle>Accept Invitation</CardTitle>
+          <CardTitle>Принять приглашение</CardTitle>
           <CardDescription>
-            Create your account to join CorpPassSecure
+            Создайте учётную запись для присоединения к CorpPassSecure
           </CardDescription>
         </CardHeader>
         <CardContent>

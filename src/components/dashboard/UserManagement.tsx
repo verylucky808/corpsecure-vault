@@ -105,8 +105,8 @@ export const UserManagement = () => {
     } catch (error: any) {
       console.error('Error loading users:', error)
       toast({
-        title: 'Error',
-        description: 'Failed to load users',
+        title: 'Ошибка',
+        description: 'Не удалось загрузить пользователей',
         variant: 'destructive',
       })
     } finally {
@@ -137,15 +137,15 @@ export const UserManagement = () => {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-3xl font-bold">User Management</h2>
-          <p className="text-muted-foreground">Manage team members and access controls</p>
+          <h2 className="text-3xl font-bold">Управление пользователями</h2>
+          <p className="text-muted-foreground">Управление участниками команды и контроль доступа</p>
         </div>
         <Card className="border-border/50">
           <CardContent className="text-center py-12">
             <Shield className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-xl font-medium mb-2">Admin Access Required</h3>
+            <h3 className="text-xl font-medium mb-2">Требуются права администратора</h3>
             <p className="text-muted-foreground">
-              You need administrator privileges to access user management features.
+              Для доступа к функциям управления пользователями необходимы права администратора.
             </p>
           </CardContent>
         </Card>
@@ -156,48 +156,48 @@ export const UserManagement = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold">User Management</h2>
-        <p className="text-muted-foreground">Manage team members and access controls</p>
+        <h2 className="text-3xl font-bold">Управление пользователями</h2>
+        <p className="text-muted-foreground">Управление участниками команды и контроль доступа</p>
       </div>
 
       <Tabs defaultValue="users" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="users">
             <Users className="h-4 w-4 mr-2" />
-            Users
+            Пользователи
           </TabsTrigger>
           <TabsTrigger value="invite">
             <UserPlus className="h-4 w-4 mr-2" />
-            Invite Users
+            Пригласить
           </TabsTrigger>
           <TabsTrigger value="access">
             <Shield className="h-4 w-4 mr-2" />
-            Access Control
+            Контроль доступа
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="users" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>All Users</CardTitle>
+              <CardTitle>Все пользователи</CardTitle>
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="text-center py-8">Loading users...</div>
+                <div className="text-center py-8">Загрузка пользователей...</div>
               ) : users.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  No users found
+                  Пользователи не найдены
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
+                      <TableHead>Имя</TableHead>
                       <TableHead>Email</TableHead>
-                      <TableHead>Roles</TableHead>
-                      <TableHead>Department</TableHead>
-                      <TableHead>Joined</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead>Роли</TableHead>
+                      <TableHead>Отдел</TableHead>
+                      <TableHead>Присоединился</TableHead>
+                      <TableHead className="text-right">Действия</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -252,11 +252,11 @@ export const UserManagement = () => {
         <TabsContent value="access">
           <Card>
             <CardHeader>
-              <CardTitle>Access Control Overview</CardTitle>
+              <CardTitle>Обзор контроля доступа</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                Select a user from the Users tab and click the shield icon to manage their vault access permissions.
+                Выберите пользователя на вкладке "Пользователи" и нажмите на значок щита, чтобы управлять его правами доступа к хранилищам.
               </p>
             </CardContent>
           </Card>

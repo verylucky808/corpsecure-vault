@@ -156,14 +156,14 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
         .select('*')
         .order('display_order', { ascending: true })
 
-      if (error) {
-        toast({
-          title: "Error",
-          description: "Failed to load vaults",
-          variant: "destructive",
-        })
-        return
-      }
+        if (error) {
+          toast({
+            title: "Ошибка",
+            description: "Не удалось загрузить хранилища",
+            variant: "destructive",
+          })
+          return
+        }
 
       setVaults(data || [])
       if (data && data.length > 0 && !selectedVault) {
@@ -186,8 +186,8 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
 
       if (error) {
         toast({
-          title: "Error",
-          description: "Failed to load passwords",
+          title: "Ошибка",
+          description: "Не удалось загрузить пароли",
           variant: "destructive",
         })
         return
@@ -217,8 +217,8 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
 
         if (error) {
           toast({
-            title: "Error",
-            description: "Failed to update vault",
+            title: "Ошибка",
+            description: "Не удалось обновить хранилище",
             variant: "destructive",
           })
           return
@@ -232,8 +232,8 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
         })
 
         toast({
-          title: "Success",
-          description: "Vault updated successfully",
+          title: "Успешно",
+          description: "Хранилище обновлено успешно",
         })
       } else {
         // Create new vault
@@ -261,8 +261,8 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
 
         if (error) {
           toast({
-            title: "Error",
-            description: "Failed to create vault",
+            title: "Ошибка",
+            description: "Не удалось создать хранилище",
             variant: "destructive",
           })
           return
@@ -276,8 +276,8 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
         })
 
         toast({
-          title: "Success",
-          description: "Vault created successfully",
+          title: "Успешно",
+          description: "Хранилище создано успешно",
         })
       }
 
@@ -310,8 +310,8 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
 
       if (error) {
         toast({
-          title: "Error",
-          description: "Failed to delete vault",
+          title: "Ошибка",
+          description: "Не удалось удалить хранилище",
           variant: "destructive",
         })
         return
@@ -325,8 +325,8 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
       })
 
       toast({
-        title: "Success",
-        description: "Vault deleted successfully",
+        title: "Успешно",
+        description: "Хранилище удалено успешно",
       })
 
       loadVaults()
@@ -370,8 +370,8 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
 
       if (error) {
         toast({
-          title: "Error",
-          description: "Failed to add password",
+          title: "Ошибка",
+          description: "Не удалось добавить пароль",
           variant: "destructive",
         })
         return
@@ -385,8 +385,8 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
       })
 
       toast({
-        title: "Success",
-        description: "Password added successfully",
+        title: "Успешно",
+        description: "Пароль добавлен успешно",
       })
 
       setNewPassword({
@@ -450,13 +450,13 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
     try {
       await navigator.clipboard.writeText(text)
       toast({
-        title: "Copied",
-        description: `${type} copied to clipboard`,
+        title: "Скопировано",
+        description: `${type} скопировано в буфер обмена`,
       })
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to copy to clipboard",
+        title: "Ошибка",
+        description: "Не удалось скопировать в буфер обмена",
         variant: "destructive",
       })
     }
@@ -483,8 +483,8 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
 
       if (error) {
         toast({
-          title: "Error",
-          description: "Failed to update password",
+          title: "Ошибка",
+          description: "Не удалось обновить пароль",
           variant: "destructive",
         })
         return
@@ -498,8 +498,8 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
       })
 
       toast({
-        title: "Success",
-        description: "Password updated successfully",
+        title: "Успешно",
+        description: "Пароль обновлён успешно",
       })
 
       setEditingPassword(null)
@@ -525,8 +525,8 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
 
       if (error) {
         toast({
-          title: "Error",
-          description: "Failed to delete password",
+          title: "Ошибка",
+          description: "Не удалось удалить пароль",
           variant: "destructive",
         })
         return
@@ -540,8 +540,8 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
       })
 
       toast({
-        title: "Success",
-        description: "Password deleted successfully",
+        title: "Успешно",
+        description: "Пароль удалён успешно",
       })
 
       loadPasswords(selectedVault)
@@ -702,16 +702,16 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
                     }}
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    Add Password
+                    Добавить пароль
                   </Button>
                 </div>
 
                 {selectedVault === vault.id && passwords.length === 0 && (
                   <div className="text-center py-8">
                     <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No passwords yet</h3>
+                    <h3 className="text-lg font-medium mb-2">Пока нет паролей</h3>
                     <p className="text-muted-foreground mb-4">
-                      Start by adding your first password to this vault
+                      Начните с добавления вашего первого пароля в это хранилище
                     </p>
                   </div>
                 )}
@@ -785,7 +785,7 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => copyToClipboard(password.username, 'Username')}
+                      onClick={() => copyToClipboard(password.username, 'Имя пользователя')}
                     >
                       <Copy className="w-3 h-3" />
                     </Button>
@@ -813,7 +813,7 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
                       size="sm"
                       onClick={() => copyToClipboard(
                         decryptPassword(password.encrypted_password), 
-                        'Password',
+                        'Пароль',
                         true
                       )}
                     >
@@ -840,7 +840,7 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
                 variant="ghost" 
                 size="sm"
                 onClick={() => {
-                  if (confirm('Are you sure you want to delete this password?')) {
+                  if (confirm('Вы уверены, что хотите удалить этот пароль?')) {
                     deletePassword(password.id)
                   }
                 }}
@@ -859,7 +859,7 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
       <div className="flex items-center justify-center h-64">
         <div className="flex items-center space-x-2">
           <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <span>Loading vaults...</span>
+          <span>Загрузка хранилищ...</span>
         </div>
       </div>
     )
@@ -870,8 +870,8 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold">Password Vaults</h2>
-          <p className="text-muted-foreground">Securely store and manage your passwords</p>
+          <h2 className="text-3xl font-bold">Хранилища паролей</h2>
+          <p className="text-muted-foreground">Безопасное хранение и управление вашими паролями</p>
         </div>
         <Dialog open={isAddingVault} onOpenChange={(open) => {
           setIsAddingVault(open)
@@ -883,31 +883,31 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
           <DialogTrigger asChild>
             <Button variant="security">
               <Plus className="w-4 h-4 mr-2" />
-              New Vault
+              Новое хранилище
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editingVault ? 'Edit Vault' : 'Create New Vault'}</DialogTitle>
+              <DialogTitle>{editingVault ? 'Редактировать хранилище' : 'Создать новое хранилище'}</DialogTitle>
               <DialogDescription>
-                {editingVault ? 'Update vault settings' : 'Create a secure vault to organize your passwords'}
+                {editingVault ? 'Обновить настройки хранилища' : 'Создать защищённое хранилище для организации паролей'}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="vault-name">Vault Name</Label>
+                <Label htmlFor="vault-name">Название хранилища</Label>
                 <Input
                   id="vault-name"
-                  placeholder="e.g., Work Accounts"
+                  placeholder="например, Рабочие аккаунты"
                   value={newVault.name}
                   onChange={(e) => setNewVault(prev => ({ ...prev, name: e.target.value }))}
                 />
               </div>
               <div>
-                <Label htmlFor="vault-description">Description</Label>
+                <Label htmlFor="vault-description">Описание</Label>
                 <Textarea
                   id="vault-description"
-                  placeholder="Brief description of this vault..."
+                  placeholder="Краткое описание хранилища..."
                   value={newVault.description}
                   onChange={(e) => setNewVault(prev => ({ ...prev, description: e.target.value }))}
                 />
@@ -920,7 +920,7 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
                   onChange={(e) => setNewVault(prev => ({ ...prev, is_shared: e.target.checked }))}
                   className="rounded"
                 />
-                <Label htmlFor="vault-shared">Make this vault shared with team</Label>
+                <Label htmlFor="vault-shared">Сделать хранилище общим для команды</Label>
               </div>
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={() => {
@@ -928,14 +928,14 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
                   setEditingVault(null)
                   setNewVault({ name: '', description: '', is_shared: false })
                 }}>
-                  Cancel
+                  Отмена
                 </Button>
                 <Button 
                   variant="security" 
                   onClick={createVault}
                   disabled={!newVault.name.trim()}
                 >
-                  {editingVault ? 'Update Vault' : 'Create Vault'}
+                  {editingVault ? 'Обновить хранилище' : 'Создать хранилище'}
                 </Button>
               </div>
             </div>
@@ -969,16 +969,16 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
         <Card className="border-border/50">
           <CardContent className="text-center py-12">
             <Shield className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-xl font-medium mb-2">No vaults created yet</h3>
+            <h3 className="text-xl font-medium mb-2">Хранилища ещё не созданы</h3>
             <p className="text-muted-foreground mb-6">
-              Create your first secure vault to start organizing your passwords
+              Создайте ваше первое защищённое хранилище, чтобы начать организацию паролей
             </p>
             <Button 
               variant="security" 
               onClick={() => setIsAddingVault(true)}
             >
               <Plus className="w-4 h-4 mr-2" />
-              Create Your First Vault
+              Создать первое хранилище
             </Button>
           </CardContent>
         </Card>
@@ -1000,23 +1000,23 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
       }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingPassword ? 'Edit Password' : 'Add New Password'}</DialogTitle>
+            <DialogTitle>{editingPassword ? 'Редактировать пароль' : 'Добавить новый пароль'}</DialogTitle>
             <DialogDescription>
-              {editingPassword ? 'Update password details' : `Add a new password to ${currentVault?.name || 'vault'}`}
+              {editingPassword ? 'Обновить данные пароля' : `Добавить новый пароль в ${currentVault?.name || 'хранилище'}`}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="password-title">Title</Label>
+              <Label htmlFor="password-title">Название</Label>
               <Input
                 id="password-title"
-                placeholder="e.g., Gmail Account"
+                placeholder="например, Аккаунт Gmail"
                 value={newPassword.title}
                 onChange={(e) => setNewPassword(prev => ({ ...prev, title: e.target.value }))}
               />
             </div>
             <div>
-              <Label htmlFor="password-username">Username/Email</Label>
+              <Label htmlFor="password-username">Имя пользователя/Email</Label>
               <Input
                 id="password-username"
                 placeholder="username@example.com"
@@ -1025,17 +1025,17 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
               />
             </div>
             <div>
-              <Label htmlFor="password-password">Password {editingPassword && '(leave empty to keep current)'}</Label>
+              <Label htmlFor="password-password">Пароль {editingPassword && '(оставьте пустым для сохранения текущего)'}</Label>
               <Input
                 id="password-password"
                 type="password"
-                placeholder={editingPassword ? "Enter new password or leave empty" : "Enter password"}
+                placeholder={editingPassword ? "Введите новый пароль или оставьте пустым" : "Введите пароль"}
                 value={newPassword.password}
                 onChange={(e) => setNewPassword(prev => ({ ...prev, password: e.target.value }))}
               />
             </div>
             <div>
-              <Label htmlFor="password-url">Website URL</Label>
+              <Label htmlFor="password-url">URL сайта</Label>
               <Input
                 id="password-url"
                 placeholder="https://example.com"
@@ -1044,10 +1044,10 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
               />
             </div>
             <div>
-              <Label htmlFor="password-notes">Notes</Label>
+              <Label htmlFor="password-notes">Заметки</Label>
               <Textarea
                 id="password-notes"
-                placeholder="Additional notes..."
+                placeholder="Дополнительные заметки..."
                 value={newPassword.notes}
                 onChange={(e) => setNewPassword(prev => ({ ...prev, notes: e.target.value }))}
               />
@@ -1064,14 +1064,14 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
                   notes: ''
                 })
               }}>
-                Cancel
+                Отмена
               </Button>
               <Button 
                 variant="security" 
                 onClick={editingPassword ? updatePassword : addPassword}
                 disabled={!newPassword.title.trim() || (!editingPassword && !newPassword.password.trim())}
               >
-                {editingPassword ? 'Update Password' : 'Add Password'}
+                {editingPassword ? 'Обновить пароль' : 'Добавить пароль'}
               </Button>
             </div>
           </div>

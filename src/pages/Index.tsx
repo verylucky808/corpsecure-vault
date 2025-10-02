@@ -30,7 +30,7 @@ const Index = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex items-center space-x-2">
           <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <span className="text-lg">Loading CorpPassSecure...</span>
+          <span className="text-lg">Загрузка CorpPassSecure...</span>
         </div>
       </div>
     )
