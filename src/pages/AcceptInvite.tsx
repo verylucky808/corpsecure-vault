@@ -143,18 +143,7 @@ export const AcceptInvite = () => {
         throw new Error('Failed to create user')
       }
 
-      // Create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          user_id: authData.user.id,
-          full_name: fullName,
-          role: 'user',
-        })
-
-      if (profileError) {
-        console.error('Error creating profile:', profileError)
-      }
+      // Profile and role will be created automatically by the handle_new_user trigger
 
       // Mark invitation as accepted
       const { error: updateError } = await supabase
