@@ -109,6 +109,26 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
     loadVaults()
     checkMfaSettings()
     loadAllPasswords()
+    
+    // Set up real-time subscription for passwords
+    const channel = supabase
+      .channel('passwords-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'passwords'
+        },
+        () => {
+          loadAllPasswords()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   const loadAllPasswords = async () => {
@@ -154,12 +174,6 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
     }
   }
 
-  useEffect(() => {
-    if (selectedVault) {
-      loadPasswords(selectedVault)
-    }
-  }, [selectedVault])
-
   // Search effect - expand vaults with matching passwords
   useEffect(() => {
     if (searchQuery.trim()) {
@@ -180,9 +194,6 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
       const newExpandedVaults: Record<string, boolean> = {}
       vaults.forEach(vault => {
         newExpandedVaults[vault.id] = matchingVaultIds.has(vault.id)
-        if (matchingVaultIds.has(vault.id) && !selectedVault) {
-          setSelectedVault(vault.id)
-        }
       })
       setExpandedVaults(newExpandedVaults)
     }
@@ -193,9 +204,6 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
       ...prev,
       [vaultId]: !prev[vaultId]
     }))
-    if (!expandedVaults[vaultId]) {
-      setSelectedVault(vaultId)
-    }
   }
 
   const loadVaults = async () => {
@@ -467,7 +475,6 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
         notes: ''
       })
       setIsAddingPassword(false)
-      loadPasswords(selectedVault)
       loadAllPasswords()
       onStatsUpdate()
     } catch (error) {
@@ -497,7 +504,7 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
 
     // Log when user views a password
     if (isShowing) {
-      const password = passwords.find(p => p.id === passwordId)
+      const password = allPasswords.find(p => p.id === passwordId)
       if (password) {
         await logEvent({
           action: 'view_password',
@@ -585,7 +592,6 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
         website_url: '',
         notes: ''
       })
-      loadPasswords(selectedVault)
       loadAllPasswords()
     } catch (error) {
       console.error('Error updating password:', error)
@@ -620,7 +626,6 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
         description: "Пароль удалён успешно",
       })
 
-      loadPasswords(selectedVault)
       loadAllPasswords()
       onStatsUpdate()
     } catch (error) {
@@ -693,11 +698,15 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
     
     if (!over || active.id === over.id) return
 
-    const oldIndex = passwords.findIndex((p) => p.id === active.id)
-    const newIndex = passwords.findIndex((p) => p.id === over.id)
+    // Get the vault id from the dragged password
+    const draggedPassword = allPasswords.find(p => p.id === active.id)
+    if (!draggedPassword) return
 
-    const newPasswords = arrayMove(passwords, oldIndex, newIndex)
-    setPasswords(newPasswords)
+    const vaultPasswords = allPasswords.filter(p => p.vault_id === draggedPassword.vault_id)
+    const oldIndex = vaultPasswords.findIndex((p) => p.id === active.id)
+    const newIndex = vaultPasswords.findIndex((p) => p.id === over.id)
+
+    const newPasswords = arrayMove(vaultPasswords, oldIndex, newIndex)
 
     // Update display_order in database
     try {
@@ -708,9 +717,10 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
           .eq('id', password.id)
       )
       await Promise.all(updates)
+      loadAllPasswords()
     } catch (error) {
       console.error('Error updating password order:', error)
-      if (selectedVault) loadPasswords(selectedVault) // Reload if error
+      loadAllPasswords() // Reload if error
     }
   }
 
@@ -826,7 +836,7 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
                   </div>
                 )}
 
-                {selectedVault === vault.id && passwords.length === 0 && (
+                {allPasswords.filter(p => p.vault_id === vault.id).length === 0 && (
                   <div className="text-center py-8">
                     <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                     <h3 className="text-lg font-medium mb-2">Пока нет паролей</h3>
@@ -836,20 +846,23 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
                   </div>
                 )}
 
-                {selectedVault === vault.id && passwords.length > 0 && (
+                {allPasswords.filter(p => p.vault_id === vault.id).length > 0 && (
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
                     onDragEnd={handlePasswordDragEnd}
                   >
                     <SortableContext
-                      items={passwords.map(p => p.id)}
+                      items={allPasswords.filter(p => p.vault_id === vault.id).map(p => p.id)}
                       strategy={verticalListSortingStrategy}
                     >
                       <div className="grid gap-4">
-                        {passwords.map((password) => (
-                          <SortablePassword key={password.id} password={password} />
-                        ))}
+                        {allPasswords
+                          .filter(p => p.vault_id === vault.id)
+                          .sort((a, b) => a.display_order - b.display_order)
+                          .map((password) => (
+                            <SortablePassword key={password.id} password={password} />
+                          ))}
                       </div>
                     </SortableContext>
                   </DndContext>
