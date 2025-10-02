@@ -243,7 +243,12 @@ export const AccessAssignmentModal = ({
       edit: 'default',
       full: 'destructive',
     }
-    return <Badge variant={colors[level] || 'outline'}>{level}</Badge>
+    const labels: Record<string, string> = {
+      read: 'Только чтение',
+      edit: 'Редактирование',
+      full: 'Полный контроль',
+    }
+    return <Badge variant={colors[level] || 'outline'}>{labels[level] || level}</Badge>
   }
 
   return (

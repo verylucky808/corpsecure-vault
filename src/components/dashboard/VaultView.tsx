@@ -51,6 +51,7 @@ interface Vault {
   is_shared: boolean
   created_at: string
   display_order: number
+  owner_id?: string
 }
 
 interface Password {
@@ -82,6 +83,8 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
   const [expandedVaults, setExpandedVaults] = useState<Record<string, boolean>>({})
   const [requireMfaForPasswords, setRequireMfaForPasswords] = useState(false)
   const [hasMfaEnabled, setHasMfaEnabled] = useState(false)
+  const [vaultPermissions, setVaultPermissions] = useState<Record<string, string>>({})
+  const [currentUserId, setCurrentUserId] = useState<string>('')
   const { toast } = useToast()
   const { logEvent } = useAuditLog()
 
@@ -150,6 +153,8 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
+      setCurrentUserId(user.id)
+
       // Load all vaults (RLS policies will filter based on ownership and access permissions)
       const { data, error } = await supabase
         .from('vaults')
@@ -166,6 +171,19 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
         }
 
       setVaults(data || [])
+      
+      // Load permissions for vaults that user doesn't own
+      const { data: permissions } = await supabase
+        .from('vault_access_permissions')
+        .select('vault_id, access_level')
+        .eq('user_id', user.id)
+
+      const permissionsMap: Record<string, string> = {}
+      permissions?.forEach(p => {
+        permissionsMap[p.vault_id] = p.access_level
+      })
+      setVaultPermissions(permissionsMap)
+
       if (data && data.length > 0 && !selectedVault) {
         setSelectedVault(data[0].id)
       }
@@ -631,6 +649,31 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
 
   const currentVault = vaults.find(v => v.id === selectedVault)
 
+  // Helper function to check if user can edit vault
+  const canEditVault = (vault: Vault): boolean => {
+    // Owner can always edit
+    if (vault.owner_id === currentUserId) return true
+    
+    // Check if user has edit or full permissions
+    const permission = vaultPermissions[vault.id]
+    return permission === 'edit' || permission === 'full'
+  }
+
+  // Helper function to check if user can delete from vault
+  const canDeleteFromVault = (vault: Vault): boolean => {
+    // Owner can always delete
+    if (vault.owner_id === currentUserId) return true
+    
+    // Only users with full permission can delete
+    const permission = vaultPermissions[vault.id]
+    return permission === 'full'
+  }
+
+  // Helper function to check if user is owner
+  const isOwner = (vault: Vault): boolean => {
+    return vault.owner_id === currentUserId
+  }
+
   // Sortable Vault Component
   const SortableVault = ({ vault }: { vault: Vault }) => {
     const {
@@ -669,26 +712,30 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        startEditVault(vault)
-                      }}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        deleteVault(vault.id)
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
+                    {isOwner(vault) && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            startEditVault(vault)
+                          }}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            deleteVault(vault.id)
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </>
+                    )}
                     <ChevronDown className={`w-5 h-5 transition-transform ${expandedVaults[vault.id] ? 'rotate-180' : ''}`} />
                   </div>
                 </div>
@@ -696,19 +743,21 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
             </CollapsibleTrigger>
             <CollapsibleContent>
               <CardContent className="pt-0">
-                <div className="flex justify-end mb-4">
-                  <Button 
-                    variant="security" 
-                    size="sm"
-                    onClick={() => {
-                      setSelectedVault(vault.id)
-                      setIsAddingPassword(true)
-                    }}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Добавить пароль
-                  </Button>
-                </div>
+                {canEditVault(vault) && (
+                  <div className="flex justify-end mb-4">
+                    <Button 
+                      variant="security" 
+                      size="sm"
+                      onClick={() => {
+                        setSelectedVault(vault.id)
+                        setIsAddingPassword(true)
+                      }}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Добавить пароль
+                    </Button>
+                  </div>
+                )}
 
                 {selectedVault === vault.id && passwords.length === 0 && (
                   <div className="text-center py-8">
@@ -833,24 +882,28 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
               </div>
             </div>
             <div className="flex items-center space-x-1">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => startEditPassword(password)}
-              >
-                <Edit className="w-4 h-4" />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => {
-                  if (confirm('Вы уверены, что хотите удалить этот пароль?')) {
-                    deletePassword(password.id)
-                  }
-                }}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+              {currentVault && canEditVault(currentVault) && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => startEditPassword(password)}
+                >
+                  <Edit className="w-4 h-4" />
+                </Button>
+              )}
+              {currentVault && canDeleteFromVault(currentVault) && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    if (confirm('Вы уверены, что хотите удалить этот пароль?')) {
+                      deletePassword(password.id)
+                    }
+                  }}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              )}
             </div>
           </div>
         </Card>
