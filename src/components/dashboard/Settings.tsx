@@ -98,16 +98,37 @@ export const Settings = () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const { error } = await supabase
+      // Проверяем, существует ли настройка
+      const { data: existing } = await supabase
         .from('system_settings')
-        .update({ 
-          value: enabled,
-          updated_by: user.id,
-          updated_at: new Date().toISOString()
-        })
+        .select('id')
         .eq('key', 'require_mfa_for_passwords')
+        .maybeSingle()
 
-      if (error) throw error
+      if (existing) {
+        // Обновляем существующую
+        const { error } = await supabase
+          .from('system_settings')
+          .update({ 
+            value: enabled,
+            updated_by: user.id,
+            updated_at: new Date().toISOString()
+          })
+          .eq('key', 'require_mfa_for_passwords')
+
+        if (error) throw error
+      } else {
+        // Создаём новую
+        const { error } = await supabase
+          .from('system_settings')
+          .insert({
+            key: 'require_mfa_for_passwords',
+            value: enabled,
+            updated_by: user.id
+          })
+
+        if (error) throw error
+      }
 
       setRequireMfaForPasswords(enabled)
 
