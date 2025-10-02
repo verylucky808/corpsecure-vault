@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Users, Shield, Trash2, UserPlus } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { useAuditLog } from '@/hooks/useAuditLog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -42,6 +43,7 @@ export const UserManagement = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<UserWithRoles | null>(null)
   const { toast } = useToast()
+  const { logEvent } = useAuditLog()
 
   useEffect(() => {
     checkAdminStatus()

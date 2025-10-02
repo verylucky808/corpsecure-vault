@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
+import { useAuditLog } from '@/hooks/useAuditLog'
 import { 
   Plus, 
   Eye, 
@@ -80,6 +81,7 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
   const [editingVault, setEditingVault] = useState<Vault | null>(null)
   const [expandedVaults, setExpandedVaults] = useState<Record<string, boolean>>({})
   const { toast } = useToast()
+  const { logEvent } = useAuditLog()
 
   const [newVault, setNewVault] = useState({
     name: '',
@@ -194,6 +196,13 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
           return
         }
 
+        await logEvent({
+          action: 'update_vault',
+          resource_type: 'vault',
+          resource_id: editingVault.id,
+          details: { name: newVault.name, is_shared: newVault.is_shared }
+        })
+
         toast({
           title: "Success",
           description: "Vault updated successfully",
@@ -230,6 +239,13 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
           })
           return
         }
+
+        await logEvent({
+          action: 'create_vault',
+          resource_type: 'vault',
+          resource_id: data.id,
+          details: { name: newVault.name, is_shared: newVault.is_shared }
+        })
 
         toast({
           title: "Success",
@@ -272,6 +288,13 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
         })
         return
       }
+
+      await logEvent({
+        action: 'delete_vault',
+        resource_type: 'vault',
+        resource_id: vaultId,
+        details: {}
+      })
 
       toast({
         title: "Success",
@@ -326,6 +349,13 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
         return
       }
 
+      await logEvent({
+        action: 'create_password',
+        resource_type: 'password',
+        resource_id: data.id,
+        details: { title: newPassword.title, vault_id: selectedVault }
+      })
+
       toast({
         title: "Success",
         description: "Password added successfully",
@@ -346,11 +376,26 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
     }
   }
 
-  const togglePasswordVisibility = (passwordId: string) => {
+  const togglePasswordVisibility = async (passwordId: string) => {
+    const isShowing = !showPasswords[passwordId]
+    
     setShowPasswords(prev => ({
       ...prev,
-      [passwordId]: !prev[passwordId]
+      [passwordId]: isShowing
     }))
+
+    // Log when user views a password
+    if (isShowing) {
+      const password = passwords.find(p => p.id === passwordId)
+      if (password) {
+        await logEvent({
+          action: 'view_password',
+          resource_type: 'password',
+          resource_id: passwordId,
+          details: { title: password.title, vault_id: password.vault_id }
+        })
+      }
+    }
   }
 
   const copyToClipboard = async (text: string, type: string) => {
@@ -397,6 +442,13 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
         return
       }
 
+      await logEvent({
+        action: 'update_password',
+        resource_type: 'password',
+        resource_id: editingPassword.id,
+        details: { title: newPassword.title, vault_id: selectedVault }
+      })
+
       toast({
         title: "Success",
         description: "Password updated successfully",
@@ -431,6 +483,13 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
         })
         return
       }
+
+      await logEvent({
+        action: 'delete_password',
+        resource_type: 'password',
+        resource_id: passwordId,
+        details: { vault_id: selectedVault }
+      })
 
       toast({
         title: "Success",

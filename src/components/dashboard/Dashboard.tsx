@@ -7,6 +7,7 @@ import { Sidebar } from './Sidebar'
 import { VaultView } from './VaultView'
 import { PasswordGenerator } from './PasswordGenerator'
 import { UserManagement } from './UserManagement'
+import { AuditLogs } from './AuditLogs'
 import { Shield, LogOut, Key, Users, Settings, BarChart3 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
@@ -278,6 +279,7 @@ export const Dashboard = () => {
           {activeTab === 'vaults' && <VaultView onStatsUpdate={loadDashboardStats} />}
           {activeTab === 'generator' && <PasswordGenerator />}
           {activeTab === 'users' && <UserManagement />}
+          {activeTab === 'logs' && <AuditLogs />}
         </main>
       </div>
     </div>

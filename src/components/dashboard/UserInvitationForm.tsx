@@ -5,6 +5,7 @@ import * as z from 'zod'
 import { Mail, Send, Clock, CheckCircle, XCircle } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { useAuditLog } from '@/hooks/useAuditLog'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -59,6 +60,7 @@ export const UserInvitationForm = () => {
   const [loading, setLoading] = useState(false)
   const [invitations, setInvitations] = useState<Invitation[]>([])
   const { toast } = useToast()
+  const { logEvent } = useAuditLog()
 
   const form = useForm<InvitationFormValues>({
     resolver: zodResolver(invitationSchema),
@@ -102,6 +104,12 @@ export const UserInvitationForm = () => {
       })
 
       if (error) throw error
+
+      await logEvent({
+        action: 'send_invitation',
+        resource_type: 'user',
+        details: { email: values.email, role: values.role }
+      })
 
       toast({
         title: 'Invitation sent!',

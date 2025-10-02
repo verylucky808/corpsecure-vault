@@ -6,7 +6,8 @@ import {
   Settings, 
   BarChart3, 
   LogOut,
-  Vault
+  Vault,
+  FileText
 } from 'lucide-react'
 
 interface User {
@@ -28,6 +29,7 @@ const menuItems = [
   { id: 'vaults', label: 'Password Vaults', icon: Vault },
   { id: 'generator', label: 'Password Generator', icon: Key },
   { id: 'users', label: 'User Management', icon: Users },
+  { id: 'logs', label: 'Audit Logs', icon: FileText, adminOnly: true },
   { id: 'settings', label: 'Settings', icon: Settings },
 ]
 
@@ -64,6 +66,12 @@ export const Sidebar = ({ user, activeTab, onTabChange, onSignOut }: SidebarProp
         {menuItems.map((item) => {
           const Icon = item.icon
           const isActive = activeTab === item.id
+          const isAdmin = user?.role === 'admin'
+          
+          // Hide admin-only items for non-admins
+          if (item.adminOnly && !isAdmin) {
+            return null
+          }
           
           return (
             <Button
