@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
-import { Shield, Lock, Eye, EyeOff } from 'lucide-react'
+import { Shield, Lock, Eye, EyeOff, Smartphone } from 'lucide-react'
 import { calculatePasswordStrength } from '@/lib/supabase'
 
 interface FormData {
@@ -22,6 +22,10 @@ export const AuthPage = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [showMfaInput, setShowMfaInput] = useState(false)
+  const [mfaCode, setMfaCode] = useState('')
+  const [mfaChallengeId, setMfaChallengeId] = useState<string>('')
+  const [mfaFactorId, setMfaFactorId] = useState<string>('')
   const navigate = useNavigate()
   const { toast } = useToast()
 
@@ -61,14 +65,36 @@ export const AuthPage = () => {
     setError('')
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       })
 
       if (error) {
         setError(error.message)
+        return
+      }
+
+      // Проверяем, есть ли у пользователя активный MFA
+      const { data: factors } = await supabase.auth.mfa.listFactors()
+      const activeFactor = factors?.all?.find(f => f.status === 'verified')
+
+      if (activeFactor) {
+        // Создаём challenge для MFA
+        const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
+          factorId: activeFactor.id
+        })
+
+        if (challengeError) {
+          setError('Ошибка инициализации 2FA')
+          return
+        }
+
+        setMfaChallengeId(challengeData.id)
+        setMfaFactorId(activeFactor.id)
+        setShowMfaInput(true)
       } else {
+        // Нет MFA, сразу перенаправляем
         toast({
           title: "С возвращением!",
           description: "Вы успешно вошли в систему.",
@@ -77,6 +103,36 @@ export const AuthPage = () => {
       }
     } catch (err) {
       setError('Произошла непредвиденная ошибка')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleMfaVerify = async () => {
+    if (!mfaChallengeId || !mfaCode || !mfaFactorId) return
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const { error } = await supabase.auth.mfa.verify({
+        factorId: mfaFactorId,
+        challengeId: mfaChallengeId,
+        code: mfaCode,
+      })
+
+      if (error) {
+        setError('Неверный код 2FA')
+        return
+      }
+
+      toast({
+        title: "С возвращением!",
+        description: "Вы успешно вошли в систему.",
+      })
+      navigate('/dashboard')
+    } catch (err) {
+      setError('Произошла ошибка при проверке 2FA')
     } finally {
       setLoading(false)
     }
@@ -152,57 +208,111 @@ export const AuthPage = () => {
               )}
 
               <TabsContent value="signin" className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
-                  <Input
-                    id="signin-email"
-                    type="email"
-                    placeholder="your.email@company.com"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="h-11"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signin-password">Пароль</Label>
-                  <div className="relative">
-                    <Input
-                      id="signin-password"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="Введите пароль"
-                      value={formData.password}
-                      onChange={(e) => handleInputChange('password', e.target.value)}
-                      className="h-11 pr-10"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-11 w-10"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                </div>
-                <Button 
-                  onClick={handleSignIn} 
-                  className="w-full h-11" 
-                  variant="security"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Вход...</span>
+                {!showMfaInput ? (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-email">Email</Label>
+                      <Input
+                        id="signin-email"
+                        type="email"
+                        placeholder="your.email@company.com"
+                        value={formData.email}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        className="h-11"
+                      />
                     </div>
-                  ) : (
-                    <>
-                      <Lock className="w-4 h-4" />
-                      Войти
-                    </>
-                  )}
-                </Button>
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-password">Пароль</Label>
+                      <div className="relative">
+                        <Input
+                          id="signin-password"
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="Введите пароль"
+                          value={formData.password}
+                          onChange={(e) => handleInputChange('password', e.target.value)}
+                          className="h-11 pr-10"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-0 top-0 h-11 w-10"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={handleSignIn} 
+                      className="w-full h-11" 
+                      variant="security"
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>Вход...</span>
+                        </div>
+                      ) : (
+                        <>
+                          <Lock className="w-4 h-4" />
+                          Войти
+                        </>
+                      )}
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Alert>
+                      <Smartphone className="h-4 w-4" />
+                      <AlertDescription>
+                        Введите 6-значный код из приложения Google Authenticator
+                      </AlertDescription>
+                    </Alert>
+                    <div className="space-y-2">
+                      <Label htmlFor="mfa-code">Код 2FA</Label>
+                      <Input
+                        id="mfa-code"
+                        type="text"
+                        placeholder="000000"
+                        value={mfaCode}
+                        onChange={(e) => setMfaCode(e.target.value)}
+                        maxLength={6}
+                        className="h-11 text-center text-lg tracking-widest"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={() => {
+                          setShowMfaInput(false)
+                          setMfaCode('')
+                          setMfaChallengeId('')
+                          setMfaFactorId('')
+                        }}
+                        variant="outline"
+                        className="flex-1"
+                      >
+                        Назад
+                      </Button>
+                      <Button 
+                        onClick={handleMfaVerify} 
+                        className="flex-1" 
+                        variant="security"
+                        disabled={loading || mfaCode.length !== 6}
+                      >
+                        {loading ? (
+                          <div className="flex items-center space-x-2">
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span>Проверка...</span>
+                          </div>
+                        ) : (
+                          'Подтвердить'
+                        )}
+                      </Button>
+                    </div>
+                  </>
+                )}
               </TabsContent>
 
               <TabsContent value="signup" className="space-y-4">
