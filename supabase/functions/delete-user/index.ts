@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit } from "../_shared/rateLimit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -57,6 +58,26 @@ serve(async (req: Request) => {
         {
           status: 403,
           headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Rate limiting: 5 user deletions per hour per admin
+    const rateLimit = checkRateLimit(`delete-user:${user.id}`, 5, 3600000);
+    if (!rateLimit.allowed) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Rate limit exceeded. Please try again later.",
+          resetAt: new Date(rateLimit.resetAt).toISOString()
+        }),
+        {
+          status: 429,
+          headers: { 
+            "Content-Type": "application/json",
+            "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": new Date(rateLimit.resetAt).toISOString(),
+            ...corsHeaders 
+          },
         }
       );
     }

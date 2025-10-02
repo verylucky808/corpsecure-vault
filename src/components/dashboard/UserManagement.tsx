@@ -30,7 +30,6 @@ import { UserDeleteModal } from './UserDeleteModal'
 interface UserProfile {
   user_id: string
   full_name: string | null
-  role: string | null
   department: string | null
   created_at: string
   profiles?: {
@@ -80,8 +79,7 @@ export const UserManagement = () => {
         // Fallback: Load profiles without emails
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
-          .select('user_id, full_name, role, department, created_at')
-          .neq('role', 'deleted')
+          .select('user_id, full_name, department, created_at')
           .order('created_at', { ascending: false })
 
         if (profilesError) throw profilesError

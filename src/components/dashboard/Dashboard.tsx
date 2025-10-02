@@ -9,6 +9,7 @@ import { PasswordGenerator } from './PasswordGenerator'
 import { UserManagement } from './UserManagement'
 import { AuditLogs } from './AuditLogs'
 import { Settings } from './Settings'
+import { AdminMfaWarning } from './AdminMfaWarning'
 import { Shield, LogOut, Key, Users, Settings as SettingsIcon, BarChart3 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
@@ -193,6 +194,8 @@ export const Dashboard = () => {
 
         {/* Dashboard Content */}
         <main className="flex-1 p-6">
+          <AdminMfaWarning />
+          
           {activeTab === 'overview' && (
             <div className="space-y-6">
               <div>

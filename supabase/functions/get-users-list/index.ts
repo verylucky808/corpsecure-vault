@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit } from "../_shared/rateLimit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -62,11 +63,30 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Rate limiting: 30 requests per minute per admin
+    const rateLimit = checkRateLimit(`get-users-list:${user.id}`, 30, 60000);
+    if (!rateLimit.allowed) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Rate limit exceeded. Please try again later.",
+          resetAt: new Date(rateLimit.resetAt).toISOString()
+        }),
+        {
+          status: 429,
+          headers: { 
+            "Content-Type": "application/json",
+            "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": new Date(rateLimit.resetAt).toISOString(),
+            ...corsHeaders 
+          },
+        }
+      );
+    }
+
     // Load profiles
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("user_id, full_name, role, department, created_at")
-      .neq("role", "deleted")
+      .select("user_id, full_name, department, created_at")
       .order("created_at", { ascending: false });
 
     if (profilesError) {

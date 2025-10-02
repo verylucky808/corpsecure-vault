@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit } from "../_shared/rateLimit.ts";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
@@ -69,6 +70,26 @@ const handler = async (req: Request): Promise<Response> => {
         {
           status: 403,
           headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Rate limiting: 20 invitations per hour per admin
+    const rateLimit = checkRateLimit(`send-invitation:${user.id}`, 20, 3600000);
+    if (!rateLimit.allowed) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Rate limit exceeded. Please try again later.",
+          resetAt: new Date(rateLimit.resetAt).toISOString()
+        }),
+        {
+          status: 429,
+          headers: { 
+            "Content-Type": "application/json",
+            "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": new Date(rateLimit.resetAt).toISOString(),
+            ...corsHeaders 
+          },
         }
       );
     }
