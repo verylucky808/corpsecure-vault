@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { User, Shield, CheckCircle, XCircle, Copy, Smartphone, Lock as LockIcon } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { User, Shield, CheckCircle, XCircle, Copy, Smartphone, Lock as LockIcon, Users } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import QRCode from 'qrcode'
 import type { Factor } from '@supabase/supabase-js'
@@ -25,6 +26,13 @@ export const Settings = () => {
   const [isAdmin, setIsAdmin] = useState(false)
   const [companyName, setCompanyName] = useState('CorpPassSecure')
   const [savingCompanyName, setSavingCompanyName] = useState(false)
+  const [users, setUsers] = useState<Array<{
+    id: string;
+    full_name: string;
+    email: string;
+    role: string;
+  }>>([])
+  const [loadingUsers, setLoadingUsers] = useState(false)
   const { toast } = useToast()
   const { logEvent } = useAuditLog()
 
@@ -381,6 +389,96 @@ export const Settings = () => {
     }
   }
 
+  const loadUsers = async () => {
+    setLoadingUsers(true)
+    try {
+      // Получаем все профили
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, user_id, full_name')
+
+      if (profilesError) throw profilesError
+
+      // Получаем роли всех пользователей
+      const { data: roles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+
+      if (rolesError) throw rolesError
+
+      // Используем edge function для получения email пользователей
+      const { data: usersData, error: usersError } = await supabase.functions.invoke('get-users-list')
+
+      if (usersError) throw usersError
+
+      const usersWithRoles = profiles?.map((profile) => {
+        const userRole = roles?.find(r => r.user_id === profile.user_id)
+        const userData = usersData?.users?.find((u: any) => u.id === profile.user_id)
+        
+        return {
+          id: profile.user_id,
+          full_name: profile.full_name || 'Без имени',
+          email: userData?.email || 'Нет email',
+          role: userRole?.role || 'пользователь'
+        }
+      }) || []
+
+      setUsers(usersWithRoles)
+    } catch (error: any) {
+      console.error('Error loading users:', error)
+      toast({
+        title: 'Ошибка',
+        description: error.message || 'Не удалось загрузить список пользователей',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoadingUsers(false)
+    }
+  }
+
+  const changeUserRole = async (userId: string, newRole: string) => {
+    try {
+      // Удаляем существующую роль
+      await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId)
+
+      // Добавляем новую роль
+      const { data: { user } } = await supabase.auth.getUser()
+      const { error } = await supabase
+        .from('user_roles')
+        .insert([{
+          user_id: userId,
+          role: newRole as 'администратор' | 'пользователь',
+          assigned_by: user?.id
+        }])
+
+      if (error) throw error
+
+      await logEvent({
+        action: 'change_user_role',
+        resource_type: 'user_roles',
+        resource_id: userId,
+        details: { new_role: newRole }
+      })
+
+      toast({
+        title: 'Успешно',
+        description: 'Роль пользователя изменена',
+      })
+
+      loadUsers()
+    } catch (error: any) {
+      console.error('Error changing user role:', error)
+      toast({
+        title: 'Ошибка',
+        description: error.message || 'Не удалось изменить роль пользователя',
+        variant: 'destructive',
+      })
+    }
+  }
+
   const activeMfaFactor = mfaFactors.find(f => f.status === 'verified' && f.friendly_name)
 
   return (
@@ -390,8 +488,10 @@ export const Settings = () => {
         <p className="text-muted-foreground">Управление профилем и безопасностью</p>
       </div>
 
-      <Tabs defaultValue="profile" className="w-full">
-        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-3' : 'grid-cols-2'}`}>
+      <Tabs defaultValue="profile" className="w-full" onValueChange={(value) => {
+        if (value === "roles") loadUsers()
+      }}>
+        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-4' : 'grid-cols-2'}`}>
           <TabsTrigger value="profile">
             <User className="h-4 w-4 mr-2" />
             Профиль
@@ -404,6 +504,12 @@ export const Settings = () => {
             <TabsTrigger value="organization">
               <LockIcon className="h-4 w-4 mr-2" />
               Организация
+            </TabsTrigger>
+          )}
+          {isAdmin && (
+            <TabsTrigger value="roles">
+              <Users className="h-4 w-4 mr-2" />
+              Роли
             </TabsTrigger>
           )}
         </TabsList>
@@ -618,6 +724,49 @@ export const Settings = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {isAdmin && (
+          <TabsContent value="roles" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Управление ролями пользователей</CardTitle>
+                <CardDescription>
+                  Изменяйте роли пользователей между "Пользователь" и "Администратор"
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loadingUsers ? (
+                  <div className="text-center py-8 text-muted-foreground">Загрузка...</div>
+                ) : users.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">Нет пользователей</div>
+                ) : (
+                  <div className="space-y-4">
+                    {users.map((user) => (
+                      <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div>
+                          <p className="font-medium">{user.full_name}</p>
+                          <p className="text-sm text-muted-foreground">{user.email}</p>
+                        </div>
+                        <Select
+                          value={user.role}
+                          onValueChange={(newRole) => changeUserRole(user.id, newRole)}
+                        >
+                          <SelectTrigger className="w-[200px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="пользователь">Пользователь</SelectItem>
+                            <SelectItem value="администратор">Администратор</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )
