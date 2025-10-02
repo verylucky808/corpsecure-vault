@@ -115,24 +115,24 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResponse = await resend.emails.send({
       from: "CorpPassSecure <onboarding@resend.dev>",
       to: [email],
-      subject: "Invitation to join CorpPassSecure",
+      subject: "Приглашение в CorpPassSecure",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1 style="color: #333;">You've been invited to CorpPassSecure</h1>
-          <p>You have been invited to join CorpPassSecure as a <strong>${role}</strong>.</p>
-          <p>Click the button below to accept your invitation and create your account:</p>
+          <h1 style="color: #333;">Вы приглашены в CorpPassSecure</h1>
+          <p>Вы были приглашены присоединиться к CorpPassSecure в роли <strong>${role}</strong>.</p>
+          <p>Нажмите на кнопку ниже, чтобы принять приглашение и создать свой аккаунт:</p>
           <div style="text-align: center; margin: 30px 0;">
             <a href="${invitationLink}" 
                style="background-color: #4F46E5; color: white; padding: 12px 30px; 
                       text-decoration: none; border-radius: 5px; display: inline-block;">
-              Accept Invitation
+              Принять приглашение
             </a>
           </div>
           <p style="color: #666; font-size: 14px;">
-            This invitation will expire in 7 days.
+            Это приглашение действительно в течение 7 дней.
           </p>
           <p style="color: #666; font-size: 14px;">
-            If you didn't expect this invitation, you can safely ignore this email.
+            Если вы не ожидали это приглашение, можете спокойно проигнорировать это письмо.
           </p>
         </div>
       `,
