@@ -78,6 +78,7 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
   const [selectedVault, setSelectedVault] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({})
+  const [decryptedPasswords, setDecryptedPasswords] = useState<Record<string, string>>({})
   const [isAddingVault, setIsAddingVault] = useState(false)
   const [isAddingPassword, setIsAddingPassword] = useState(false)
   const [editingPassword, setEditingPassword] = useState<Password | null>(null)
@@ -502,10 +503,30 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
       [passwordId]: isShowing
     }))
 
-    // Log when user views a password
+    // Decrypt password when showing
     if (isShowing) {
       const password = allPasswords.find(p => p.id === passwordId)
       if (password) {
+        try {
+          const decrypted = await decryptPassword(password.encrypted_password)
+          setDecryptedPasswords(prev => ({
+            ...prev,
+            [passwordId]: decrypted
+          }))
+        } catch (error) {
+          console.error('Error decrypting password:', error)
+          toast({
+            title: "Ошибка",
+            description: "Не удалось расшифровать пароль",
+            variant: "destructive",
+          })
+          setShowPasswords(prev => ({
+            ...prev,
+            [passwordId]: false
+          }))
+          return
+        }
+
         await logEvent({
           action: 'view_password',
           resource_type: 'password',
@@ -513,6 +534,13 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
           details: { title: password.title, vault_id: password.vault_id }
         })
       }
+    } else {
+      // Clear decrypted password when hiding
+      setDecryptedPasswords(prev => {
+        const newState = { ...prev }
+        delete newState[passwordId]
+        return newState
+      })
     }
   }
 
@@ -934,7 +962,7 @@ export const VaultView = ({ onStatsUpdate }: VaultViewProps) => {
                     <Lock className="w-3 h-3" />
                     <span>
                       {showPasswords[password.id] 
-                        ? '(decrypting...)'
+                        ? (decryptedPasswords[password.id] || 'Расшифровка...')
                         : '••••••••'
                       }
                     </span>
