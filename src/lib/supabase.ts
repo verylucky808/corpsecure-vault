@@ -41,6 +41,15 @@ export const decryptPassword = async (encryptedPassword: string): Promise<string
     // Decode from base64
     const combined = Uint8Array.from(atob(encryptedPassword), c => c.charCodeAt(0))
     
+    // Check if this is old format (just base64 encoded text) or new format (key+IV+encrypted)
+    // New format should be at least 44 bytes (32 for key + 12 for IV + encrypted data)
+    if (combined.length < 44) {
+      // Old format - just decode the text
+      const decoder = new TextDecoder()
+      return decoder.decode(combined)
+    }
+    
+    // New format - decrypt with key and IV
     // Extract key, IV, and encrypted data
     const keyData = combined.slice(0, 32)
     const iv = combined.slice(32, 44)
@@ -65,7 +74,7 @@ export const decryptPassword = async (encryptedPassword: string): Promise<string
     const decoder = new TextDecoder()
     return decoder.decode(decryptedData)
   } catch (error) {
-    console.error('Decryption failed')
+    console.error('Decryption failed:', error)
     throw new Error('Failed to decrypt password')
   }
 }
