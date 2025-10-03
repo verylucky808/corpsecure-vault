@@ -25,6 +25,8 @@ export const Settings = () => {
   const [isAdmin, setIsAdmin] = useState(false)
   const [companyName, setCompanyName] = useState('CorpPassSecure')
   const [savingCompanyName, setSavingCompanyName] = useState(false)
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
   const { toast } = useToast()
   const { logEvent } = useAuditLog()
 
@@ -87,6 +89,17 @@ export const Settings = () => {
 
       if (companySettings) {
         setCompanyName(companySettings.value as string)
+      }
+
+      // Load company logo setting
+      const { data: logoSettings } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'company_logo')
+        .maybeSingle()
+
+      if (logoSettings) {
+        setCompanyLogo(logoSettings.value as string)
       }
     } catch (error) {
       console.error('Error loading profile:', error)
@@ -420,6 +433,160 @@ export const Settings = () => {
     }
   }
 
+  const uploadLogo = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Ошибка',
+        description: 'Пожалуйста, загрузите файл изображения',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: 'Ошибка',
+        description: 'Размер файла не должен превышать 2MB',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setUploadingLogo(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Delete old logo if exists
+      if (companyLogo) {
+        const oldFileName = companyLogo.split('/').pop()
+        if (oldFileName) {
+          await supabase.storage
+            .from('company-logos')
+            .remove([oldFileName])
+        }
+      }
+
+      // Upload new logo
+      const fileExt = file.name.split('.').pop()
+      const fileName = `logo-${Date.now()}.${fileExt}`
+      const { error: uploadError } = await supabase.storage
+        .from('company-logos')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        })
+
+      if (uploadError) throw uploadError
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('company-logos')
+        .getPublicUrl(fileName)
+
+      // Save to system settings
+      const { data: existing } = await supabase
+        .from('system_settings')
+        .select('id')
+        .eq('key', 'company_logo')
+        .maybeSingle()
+
+      if (existing) {
+        const { error } = await supabase
+          .from('system_settings')
+          .update({ 
+            value: publicUrl,
+            updated_by: user.id,
+            updated_at: new Date().toISOString()
+          })
+          .eq('key', 'company_logo')
+
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('system_settings')
+          .insert({
+            key: 'company_logo',
+            value: publicUrl,
+            updated_by: user.id
+          })
+
+        if (error) throw error
+      }
+
+      setCompanyLogo(publicUrl)
+
+      await logEvent({
+        action: 'update_company_logo',
+        resource_type: 'system_settings',
+        resource_id: 'company_logo',
+        details: { logo_url: publicUrl }
+      })
+
+      toast({
+        title: 'Успешно',
+        description: 'Логотип компании обновлен',
+      })
+    } catch (error: any) {
+      toast({
+        title: 'Ошибка',
+        description: error.message || 'Не удалось загрузить логотип',
+        variant: 'destructive',
+      })
+    } finally {
+      setUploadingLogo(false)
+    }
+  }
+
+  const removeLogo = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Delete logo from storage
+      if (companyLogo) {
+        const fileName = companyLogo.split('/').pop()
+        if (fileName) {
+          await supabase.storage
+            .from('company-logos')
+            .remove([fileName])
+        }
+      }
+
+      // Remove from system settings
+      const { error } = await supabase
+        .from('system_settings')
+        .delete()
+        .eq('key', 'company_logo')
+
+      if (error) throw error
+
+      setCompanyLogo(null)
+
+      await logEvent({
+        action: 'remove_company_logo',
+        resource_type: 'system_settings',
+        resource_id: 'company_logo'
+      })
+
+      toast({
+        title: 'Успешно',
+        description: 'Логотип компании удален',
+      })
+    } catch (error: any) {
+      toast({
+        title: 'Ошибка',
+        description: error.message || 'Не удалось удалить логотип',
+        variant: 'destructive',
+      })
+    }
+  }
+
   const activeMfaFactor = mfaFactors.find(f => f.status === 'verified' && f.friendly_name)
 
   return (
@@ -615,6 +782,39 @@ export const Settings = () => {
               <Button onClick={updateCompanyName} disabled={savingCompanyName}>
                 {savingCompanyName ? 'Сохранение...' : 'Сохранить изменения'}
               </Button>
+
+              <div className="space-y-2 pt-4 border-t">
+                <Label htmlFor="companyLogo">Логотип компании</Label>
+                {companyLogo && (
+                  <div className="flex items-center gap-4">
+                    <img 
+                      src={companyLogo} 
+                      alt="Логотип компании" 
+                      className="h-16 w-16 object-contain border rounded-md p-2"
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={removeLogo}
+                    >
+                      Удалить логотип
+                    </Button>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="companyLogo"
+                    type="file"
+                    accept="image/*"
+                    onChange={uploadLogo}
+                    disabled={uploadingLogo}
+                    className="cursor-pointer"
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Загрузите логотип вашей компании (макс. 2MB, форматы: JPG, PNG, SVG)
+                </p>
+              </div>
             </CardContent>
           </Card>
 

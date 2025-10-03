@@ -42,6 +42,9 @@ export const Dashboard = () => {
     weakPasswords: 0
   })
   const [companyName, setCompanyName] = useState('CorpPassSecure')
+  const [savingCompanyName, setSavingCompanyName] = useState(false)
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
   const { toast } = useToast()
   const navigate = useNavigate()
 
@@ -127,6 +130,17 @@ export const Dashboard = () => {
       if (companySettings) {
         setCompanyName(companySettings.value as string)
       }
+
+      // Load company logo
+      const { data: logoSettings } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'company_logo')
+        .maybeSingle()
+
+      if (logoSettings) {
+        setCompanyLogo(logoSettings.value as string)
+      }
     } catch (error) {
       console.error('Error loading company name:', error)
     }
@@ -177,7 +191,15 @@ export const Dashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold flex items-center space-x-2">
-                <Shield className="h-6 w-6 text-primary" />
+                {companyLogo ? (
+                  <img 
+                    src={companyLogo} 
+                    alt="Логотип компании" 
+                    className="h-6 w-6 object-contain"
+                  />
+                ) : (
+                  <Shield className="h-6 w-6 text-primary" />
+                )}
                 <span>{companyName}</span>
               </h1>
               <p className="text-muted-foreground">С возвращением, {user?.full_name || user?.email}</p>
