@@ -26,6 +26,8 @@ export const AuthPage = () => {
   const [mfaCode, setMfaCode] = useState('')
   const [mfaChallengeId, setMfaChallengeId] = useState<string>('')
   const [mfaFactorId, setMfaFactorId] = useState<string>('')
+  const [emailSent, setEmailSent] = useState(false)
+  const [signUpEmail, setSignUpEmail] = useState('')
   const navigate = useNavigate()
   const { toast } = useToast()
 
@@ -145,32 +147,47 @@ export const AuthPage = () => {
     setError('')
 
     try {
-      const { error } = await supabase.auth.signUp({
+      // Возврат после подтверждения: работает и на localhost, и на 127.0.0.1:8080
+      const redirectTo = `${window.location.origin}/dashboard`
+
+      const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
           data: {
             full_name: formData.fullName,
           },
-          emailRedirectTo: `${window.location.origin}/dashboard`,
+          emailRedirectTo: redirectTo,
         },
       })
 
       if (error) {
         setError(error.message)
-      } else {
+        return
+      }
+
+      if (data.session) {
         toast({
           title: "Аккаунт создан!",
-          description: "Добро пожаловать в CorpPassSecure. Теперь вы можете безопасно управлять паролями.",
+          description: "Добро пожаловать в CorpPassSecure.",
         })
         navigate('/dashboard')
+        return
       }
+
+      setSignUpEmail(formData.email)
+      setEmailSent(true)
+      toast({
+        title: "Проверьте почту",
+        description: `Мы отправили письмо с подтверждением на ${formData.email}.`,
+      })
     } catch (err) {
       setError('Произошла непредвиденная ошибка')
     } finally {
       setLoading(false)
     }
   }
+
 
   const passwordStrength = calculatePasswordStrength(formData.password)
 
@@ -316,6 +333,30 @@ export const AuthPage = () => {
               </TabsContent>
 
               <TabsContent value="signup" className="space-y-4">
+                {emailSent ? (
+                  <div className="space-y-4 text-center">
+                    <Alert>
+                      <Shield className="h-4 w-4" />
+                      <AlertDescription className="text-left">
+                        Проверьте почту — мы отправили письмо с подтверждением на{' '}
+                        <span className="font-medium">{signUpEmail}</span>. Перейдите по ссылке
+                        из письма, чтобы активировать аккаунт и войти.
+                      </AlertDescription>
+                    </Alert>
+                    <Button
+                      variant="outline"
+                      className="w-full h-11"
+                      onClick={() => {
+                        setEmailSent(false)
+                        setFormData({ email: '', password: '', fullName: '' })
+                      }}
+                    >
+                      Назад
+                    </Button>
+                  </div>
+                ) : (
+                <>
+
                 <div className="space-y-2">
                   <Label htmlFor="signup-name">Полное имя</Label>
                   <Input
@@ -404,6 +445,8 @@ export const AuthPage = () => {
                     </>
                   )}
                 </Button>
+                </>
+                )}
               </TabsContent>
             </Tabs>
           </CardContent>
