@@ -80,7 +80,6 @@ export const UserDeleteModal = ({
           .from('profiles')
           .update({
             full_name: `[DELETED] ${userName}`,
-            role: 'deleted',
           })
           .eq('user_id', userId)
 

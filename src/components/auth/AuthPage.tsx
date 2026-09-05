@@ -333,6 +333,30 @@ export const AuthPage = () => {
               </TabsContent>
 
               <TabsContent value="signup" className="space-y-4">
+                {emailSent ? (
+                  <div className="space-y-4 text-center">
+                    <Alert>
+                      <Shield className="h-4 w-4" />
+                      <AlertDescription className="text-left">
+                        Проверьте почту — мы отправили письмо с подтверждением на{' '}
+                        <span className="font-medium">{signUpEmail}</span>. Перейдите по ссылке
+                        из письма, чтобы активировать аккаунт и войти.
+                      </AlertDescription>
+                    </Alert>
+                    <Button
+                      variant="outline"
+                      className="w-full h-11"
+                      onClick={() => {
+                        setEmailSent(false)
+                        setFormData({ email: '', password: '', fullName: '' })
+                      }}
+                    >
+                      Назад
+                    </Button>
+                  </div>
+                ) : (
+                <>
+
                 <div className="space-y-2">
                   <Label htmlFor="signup-name">Полное имя</Label>
                   <Input
