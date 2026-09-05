@@ -445,6 +445,8 @@ export const AuthPage = () => {
                     </>
                   )}
                 </Button>
+                </>
+                )}
               </TabsContent>
             </Tabs>
           </CardContent>
